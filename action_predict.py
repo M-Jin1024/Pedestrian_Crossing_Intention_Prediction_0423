@@ -156,6 +156,19 @@ class ActionPredict(object):
         # Create model
         train_model = self.get_model(data_train['data_params'])
 
+        # 统计参数数量
+        total_params = train_model.count_params()
+        trainable_params = sum([tf.keras.backend.count_params(w) for w in train_model.trainable_weights])
+        non_trainable_params = total_params - trainable_params
+        
+        print(f"\n{'='*60}")
+        print(f"📊 MODEL PARAMETER STATISTICS")
+        print(f"{'='*60}")
+        print(f"Total parameters:        {total_params:,}")
+        print(f"Trainable parameters:    {trainable_params:,}")
+        print(f"Non-trainable parameters: {non_trainable_params:,}")
+        print(f"{'='*60}\n")
+
         # plot_model(train_model, to_file=path_params['save_folder']+'/model_structure.png', show_shapes=True)
         # Generate detailed model architecture diagram
         plot_model(
@@ -164,6 +177,10 @@ class ActionPredict(object):
             show_layer_names=True,
             rankdir='TB',
         )
+        
+        # 显示详细的模型结构
+        # train_model.summary()
+
         # Train the model
         # class_w = self.class_weights(model_opts['apply_class_weights'], data_train['count'])
         optimizer = self.get_optimizer(optimizer)(lr=lr)
@@ -177,7 +194,7 @@ class ActionPredict(object):
             },
             loss_weights={
                 'intention': 1,
-                'etraj': 0  # 轨迹 loss 权重可调
+                'etraj': 0.0000  # 轨迹 loss 权重可调
             },
             optimizer=optimizer,
             metrics={
@@ -586,6 +603,8 @@ class Transformer_depth(ActionPredict):
         shortcut = x
         x = Dense(2 * self.d_model, activation=tf.nn.gelu, kernel_regularizer=regularizers.L2(0.005), name=f'{name}_fem_ffn1_dense1')(x)
         x = Dense(self.d_model, activation=None, kernel_regularizer=regularizers.L2(0.005), name=f'{name}_fem_ffn1_dense2')(x)
+        # x = Dense(2 * self.d_model, activation=tf.nn.gelu, kernel_regularizer=regularizers.L2(0.005), name=f'{name}_fem_ffn2_dense1')(x)
+        # x = Dense(self.d_model, activation=None, kernel_regularizer=regularizers.L2(0.005), name=f'{name}_fem_ffn2_dense2')(x)
         # x = Dense(2 * self.d_model, activation=tf.nn.gelu, name=f'{name}_fem_ffn1_dense1')(x)
         # x = Dense(self.d_model, activation=None, name=f'{name}_fem_ffn1_dense2')(x)
         x = Dropout(dropout, name=f'{name}_fem_drop')(x)
@@ -703,9 +722,9 @@ class Transformer_depth(ActionPredict):
         intention = Dense(1, activation='sigmoid', name='intention')(h)
 
         # —— Etraj head（独立分支）
-        ce = Dropout(0.1, name='cls_dropout_e')(cls_out)
-        e = Dense(128, activation='gelu', kernel_regularizer=regularizers.l2(5e-4), name='head_fc2')(ce)
-        e = Dropout(0.1, name='head_dropout2')(e)
+        # ce = Dropout(0.1, name='cls_dropout_e')(cls_out)
+        e = Dense(128, activation='gelu', kernel_regularizer=regularizers.l2(5e-3), name='head_fc2')(cls_out)
+        # e = Dropout(0.1, name='head_dropout2')(e)
         etraj = Dense(4, activation=None, name='etraj')(e)
 
         model = Model(inputs=[bbox_in, depth_in, vehspd_in, pedspd_in],
@@ -825,8 +844,11 @@ class Transformer_depth(ActionPredict):
             # d['trajectory'].extend([[seq[i + obs_length][0] / data_raw['image_dimension'][0], seq[i + obs_length][1] / data_raw['image_dimension'][1],
             #                          seq[i + obs_length][2] / data_raw['image_dimension'][0], seq[i + obs_length][3] / data_raw['image_dimension'][1]]
             #                         for i in range(start_idx, end_idx + 1, 1 if overlap == 0 else int((1 - overlap) * obs_length))])
-            d['trajectory'].extend([[seq[i + obs_length][0] + time_to_event[0] - 1, seq[i + obs_length][1] + time_to_event[0] - 1,
-                                        seq[i + obs_length][2] + time_to_event[0] - 1, seq[i + obs_length][3] + time_to_event[0] - 1]
+            # d['trajectory'].extend([[seq[i + obs_length][0] + time_to_event[0] - 1, seq[i + obs_length][1] + time_to_event[0] - 1,
+            #                             seq[i + obs_length][2] + time_to_event[0] - 1, seq[i + obs_length][3] + time_to_event[0] - 1]
+            #                         for i in range(start_idx, end_idx + 1, 1 if overlap == 0 else int((1 - overlap) * obs_length))])
+            d['trajectory'].extend([[seq[i + obs_length][0], seq[i + obs_length][1],
+                                     seq[i + obs_length][2], seq[i + obs_length][3]]
                                     for i in range(start_idx, end_idx + 1, 1 if overlap == 0 else int((1 - overlap) * obs_length))])
 
         # ========== 深度信息 ==========

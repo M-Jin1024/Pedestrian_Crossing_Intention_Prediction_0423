@@ -73,7 +73,7 @@ class EpochSaveCallback(tf.keras.callbacks.Callback):
         self.epoch_history.append(epoch_info)
         
         # 保存每个epoch的模型
-        epoch_filename = f"epoch_{epoch+1:03d}_loss_{logs.get('val_loss', 0):.4f}_acc_{logs.get('val_accuracy', 0):.4f}"
+        epoch_filename = f"epoch_{epoch+1:03d}_loss_{logs.get('val_loss', 0):.4f}_acc_{logs.get('val_intention_accuracy', 0):.4f}"
         if self.save_format == 'h5':
             epoch_filepath = os.path.join(self.save_dir, 'epochs', f"{epoch_filename}.h5")
             if self.save_weights_only:

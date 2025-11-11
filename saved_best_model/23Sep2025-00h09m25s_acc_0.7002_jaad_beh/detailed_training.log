@@ -1,0 +1,425 @@
+Training started at 2025-09-23 00:09:26.871712
+================================================================================
+
+Epoch 1 - 2025-09-23 00:09:43
+----------------------------------------
+loss           : 8.655608
+intention_loss : 0.211266
+etraj_loss     : 242617.687500
+intention_accuracy: 0.545455
+etraj_mae      : 849.584778
+val_loss       : 4.780124
+val_intention_loss: 0.256934
+val_etraj_loss : 304196.218750
+val_intention_accuracy: 0.677686
+val_etraj_mae  : 811.609802
+----------------------------------------
+
+Epoch 2 - 2025-09-23 00:09:54
+----------------------------------------
+loss           : 3.178602
+intention_loss : 0.180282
+etraj_loss     : 242420.750000
+intention_accuracy: 0.629335
+etraj_mae      : 849.165039
+val_loss       : 2.308769
+val_intention_loss: 0.281924
+val_etraj_loss : 304062.843750
+val_intention_accuracy: 0.681818
+val_etraj_mae  : 811.401062
+----------------------------------------
+
+Epoch 3 - 2025-09-23 00:10:05
+----------------------------------------
+loss           : 1.755571
+intention_loss : 0.164486
+etraj_loss     : 242347.109375
+intention_accuracy: 0.664480
+etraj_mae      : 849.012573
+val_loss       : 1.549822
+val_intention_loss: 0.286017
+val_etraj_loss : 303983.656250
+val_intention_accuracy: 0.553719
+val_etraj_mae  : 811.272949
+----------------------------------------
+
+Epoch 4 - 2025-09-23 00:10:15
+----------------------------------------
+loss           : 1.211214
+intention_loss : 0.163179
+etraj_loss     : 242314.562500
+intention_accuracy: 0.657451
+etraj_mae      : 848.935181
+val_loss       : 1.195328
+val_intention_loss: 0.332294
+val_etraj_loss : 303968.406250
+val_intention_accuracy: 0.557851
+val_etraj_mae  : 811.246033
+----------------------------------------
+
+Epoch 5 - 2025-09-23 00:10:26
+----------------------------------------
+loss           : 0.876250
+intention_loss : 0.151863
+etraj_loss     : 242309.453125
+intention_accuracy: 0.691190
+etraj_mae      : 848.925659
+val_loss       : 0.895567
+val_intention_loss: 0.292333
+val_etraj_loss : 303966.375000
+val_intention_accuracy: 0.615702
+val_etraj_mae  : 811.241821
+----------------------------------------
+
+Epoch 6 - 2025-09-23 00:10:37
+----------------------------------------
+loss           : 0.658233
+intention_loss : 0.146703
+etraj_loss     : 242309.265625
+intention_accuracy: 0.679475
+etraj_mae      : 848.925232
+val_loss       : 0.793138
+val_intention_loss: 0.361868
+val_etraj_loss : 303966.312500
+val_intention_accuracy: 0.553719
+val_etraj_mae  : 811.241760
+----------------------------------------
+
+Epoch 7 - 2025-09-23 00:10:48
+----------------------------------------
+loss           : 0.513765
+intention_loss : 0.143224
+etraj_loss     : 242309.140625
+intention_accuracy: 0.691190
+etraj_mae      : 848.925232
+val_loss       : 0.667220
+val_intention_loss: 0.349144
+val_etraj_loss : 303966.250000
+val_intention_accuracy: 0.586777
+val_etraj_mae  : 811.241760
+----------------------------------------
+
+Epoch 8 - 2025-09-23 00:10:59
+----------------------------------------
+loss           : 0.411224
+intention_loss : 0.135798
+etraj_loss     : 242309.000000
+intention_accuracy: 0.716026
+etraj_mae      : 848.925232
+val_loss       : 0.589084
+val_intention_loss: 0.350679
+val_etraj_loss : 303966.375000
+val_intention_accuracy: 0.590909
+val_etraj_mae  : 811.241760
+----------------------------------------
+
+Epoch 9 - 2025-09-23 00:11:09
+----------------------------------------
+loss           : 0.339566
+intention_loss : 0.129966
+etraj_loss     : 242308.968750
+intention_accuracy: 0.732427
+etraj_mae      : 848.925232
+val_loss       : 0.613950
+val_intention_loss: 0.429172
+val_etraj_loss : 303966.250000
+val_intention_accuracy: 0.628099
+val_etraj_mae  : 811.241760
+----------------------------------------
+
+Epoch 10 - 2025-09-23 00:11:20
+----------------------------------------
+loss           : 0.289292
+intention_loss : 0.123815
+etraj_loss     : 242309.015625
+intention_accuracy: 0.767104
+etraj_mae      : 848.925232
+val_loss       : 0.572395
+val_intention_loss: 0.424075
+val_etraj_loss : 303966.312500
+val_intention_accuracy: 0.599174
+val_etraj_mae  : 811.241760
+----------------------------------------
+
+Epoch 11 - 2025-09-23 00:11:31
+----------------------------------------
+loss           : 0.251724
+intention_loss : 0.116850
+etraj_loss     : 242308.921875
+intention_accuracy: 0.779756
+etraj_mae      : 848.925232
+val_loss       : 0.489743
+val_intention_loss: 0.367511
+val_etraj_loss : 303966.218750
+val_intention_accuracy: 0.603306
+val_etraj_mae  : 811.241760
+----------------------------------------
+
+Epoch 12 - 2025-09-23 00:11:42
+----------------------------------------
+loss           : 0.224364
+intention_loss : 0.111939
+etraj_loss     : 242308.812500
+intention_accuracy: 0.798500
+etraj_mae      : 848.925232
+val_loss       : 0.610294
+val_intention_loss: 0.507070
+val_etraj_loss : 303966.281250
+val_intention_accuracy: 0.599174
+val_etraj_mae  : 811.241760
+----------------------------------------
+
+Epoch 13 - 2025-09-23 00:11:53
+----------------------------------------
+loss           : 0.196791
+intention_loss : 0.101077
+etraj_loss     : 242309.015625
+intention_accuracy: 0.803655
+etraj_mae      : 848.925232
+val_loss       : 0.640303
+val_intention_loss: 0.552209
+val_etraj_loss : 303966.312500
+val_intention_accuracy: 0.665289
+val_etraj_mae  : 811.241760
+----------------------------------------
+
+Epoch 14 - 2025-09-23 00:12:04
+----------------------------------------
+loss           : 0.178095
+intention_loss : 0.095901
+etraj_loss     : 242309.062500
+intention_accuracy: 0.814902
+etraj_mae      : 848.925232
+val_loss       : 0.671322
+val_intention_loss: 0.594795
+val_etraj_loss : 303966.312500
+val_intention_accuracy: 0.673554
+val_etraj_mae  : 811.241760
+----------------------------------------
+
+Epoch 15 - 2025-09-23 00:12:14
+----------------------------------------
+loss           : 0.166012
+intention_loss : 0.095280
+etraj_loss     : 242308.875000
+intention_accuracy: 0.822868
+etraj_mae      : 848.925232
+val_loss       : 0.613718
+val_intention_loss: 0.547366
+val_etraj_loss : 303966.375000
+val_intention_accuracy: 0.669421
+val_etraj_mae  : 811.241760
+----------------------------------------
+
+Epoch 16 - 2025-09-23 00:12:25
+----------------------------------------
+loss           : 0.153616
+intention_loss : 0.092006
+etraj_loss     : 242308.937500
+intention_accuracy: 0.827554
+etraj_mae      : 848.925232
+val_loss       : 0.566904
+val_intention_loss: 0.509216
+val_etraj_loss : 303966.312500
+val_intention_accuracy: 0.636364
+val_etraj_mae  : 811.241760
+----------------------------------------
+
+Epoch 17 - 2025-09-23 00:12:36
+----------------------------------------
+loss           : 0.140829
+intention_loss : 0.086466
+etraj_loss     : 242309.046875
+intention_accuracy: 0.849110
+etraj_mae      : 848.925232
+val_loss       : 0.666269
+val_intention_loss: 0.615714
+val_etraj_loss : 303966.312500
+val_intention_accuracy: 0.685950
+val_etraj_mae  : 811.241760
+----------------------------------------
+
+Epoch 18 - 2025-09-23 00:12:47
+----------------------------------------
+loss           : 0.127778
+intention_loss : 0.080164
+etraj_loss     : 242308.921875
+intention_accuracy: 0.858013
+etraj_mae      : 848.925232
+val_loss       : 0.590383
+val_intention_loss: 0.545513
+val_etraj_loss : 303966.406250
+val_intention_accuracy: 0.603306
+val_etraj_mae  : 811.241760
+----------------------------------------
+
+Epoch 19 - 2025-09-23 00:12:57
+----------------------------------------
+loss           : 0.126256
+intention_loss : 0.082787
+etraj_loss     : 242309.015625
+intention_accuracy: 0.848641
+etraj_mae      : 848.925232
+val_loss       : 0.632237
+val_intention_loss: 0.592707
+val_etraj_loss : 303966.281250
+val_intention_accuracy: 0.623967
+val_etraj_mae  : 811.241760
+----------------------------------------
+
+Epoch 20 - 2025-09-23 00:13:08
+----------------------------------------
+loss           : 0.116447
+intention_loss : 0.078833
+etraj_loss     : 242309.015625
+intention_accuracy: 0.848172
+etraj_mae      : 848.925232
+val_loss       : 0.657344
+val_intention_loss: 0.621211
+val_etraj_loss : 303966.312500
+val_intention_accuracy: 0.582645
+val_etraj_mae  : 811.241760
+----------------------------------------
+
+Epoch 21 - 2025-09-23 00:13:19
+----------------------------------------
+loss           : 0.108987
+intention_loss : 0.075459
+etraj_loss     : 242308.984375
+intention_accuracy: 0.868791
+etraj_mae      : 848.925232
+val_loss       : 0.634910
+val_intention_loss: 0.603473
+val_etraj_loss : 303966.250000
+val_intention_accuracy: 0.665289
+val_etraj_mae  : 811.241760
+----------------------------------------
+
+Epoch 22 - 2025-09-23 00:13:30
+----------------------------------------
+loss           : 0.107689
+intention_loss : 0.077332
+etraj_loss     : 242308.875000
+intention_accuracy: 0.873008
+etraj_mae      : 848.925232
+val_loss       : 0.581701
+val_intention_loss: 0.552887
+val_etraj_loss : 303966.375000
+val_intention_accuracy: 0.603306
+val_etraj_mae  : 811.241760
+----------------------------------------
+
+Epoch 23 - 2025-09-23 00:13:40
+----------------------------------------
+loss           : 0.097689
+intention_loss : 0.069529
+etraj_loss     : 242309.046875
+intention_accuracy: 0.874883
+etraj_mae      : 848.925232
+val_loss       : 0.495191
+val_intention_loss: 0.468864
+val_etraj_loss : 303966.312500
+val_intention_accuracy: 0.648760
+val_etraj_mae  : 811.241760
+----------------------------------------
+
+Epoch 24 - 2025-09-23 00:13:51
+----------------------------------------
+loss           : 0.097040
+intention_loss : 0.071796
+etraj_loss     : 242309.140625
+intention_accuracy: 0.873477
+etraj_mae      : 848.925232
+val_loss       : 0.533352
+val_intention_loss: 0.508712
+val_etraj_loss : 303966.281250
+val_intention_accuracy: 0.595041
+val_etraj_mae  : 811.241760
+----------------------------------------
+
+Epoch 25 - 2025-09-23 00:14:02
+----------------------------------------
+loss           : 0.091281
+intention_loss : 0.068214
+etraj_loss     : 242308.890625
+intention_accuracy: 0.881443
+etraj_mae      : 848.925232
+val_loss       : 0.666205
+val_intention_loss: 0.643581
+val_etraj_loss : 303966.312500
+val_intention_accuracy: 0.677686
+val_etraj_mae  : 811.241760
+----------------------------------------
+
+Epoch 26 - 2025-09-23 00:14:12
+----------------------------------------
+loss           : 0.088507
+intention_loss : 0.067192
+etraj_loss     : 242308.921875
+intention_accuracy: 0.880506
+etraj_mae      : 848.925232
+val_loss       : 0.585818
+val_intention_loss: 0.565676
+val_etraj_loss : 303966.375000
+val_intention_accuracy: 0.681818
+val_etraj_mae  : 811.241760
+----------------------------------------
+
+Epoch 27 - 2025-09-23 00:14:23
+----------------------------------------
+loss           : 0.080357
+intention_loss : 0.061170
+etraj_loss     : 242308.937500
+intention_accuracy: 0.895970
+etraj_mae      : 848.925232
+val_loss       : 0.692591
+val_intention_loss: 0.673293
+val_etraj_loss : 303966.250000
+val_intention_accuracy: 0.607438
+val_etraj_mae  : 811.241760
+----------------------------------------
+
+Epoch 28 - 2025-09-23 00:14:34
+----------------------------------------
+loss           : 0.088718
+intention_loss : 0.069808
+etraj_loss     : 242308.906250
+intention_accuracy: 0.873477
+etraj_mae      : 848.925232
+val_loss       : 0.571194
+val_intention_loss: 0.553763
+val_etraj_loss : 303966.218750
+val_intention_accuracy: 0.723140
+val_etraj_mae  : 811.241760
+----------------------------------------
+
+Epoch 29 - 2025-09-23 00:14:45
+----------------------------------------
+loss           : 0.073929
+intention_loss : 0.057453
+etraj_loss     : 242308.875000
+intention_accuracy: 0.899719
+etraj_mae      : 848.925232
+val_loss       : 0.790101
+val_intention_loss: 0.774238
+val_etraj_loss : 303966.281250
+val_intention_accuracy: 0.648760
+val_etraj_mae  : 811.241760
+----------------------------------------
+
+Epoch 30 - 2025-09-23 00:14:56
+----------------------------------------
+loss           : 0.076894
+intention_loss : 0.061508
+etraj_loss     : 242309.000000
+intention_accuracy: 0.893627
+etraj_mae      : 848.925232
+val_loss       : 0.572722
+val_intention_loss: 0.557603
+val_etraj_loss : 303966.375000
+val_intention_accuracy: 0.685950
+val_etraj_mae  : 811.241760
+----------------------------------------
+
+Training completed at 2025-09-23 00:14:56.278738
+================================================================================
