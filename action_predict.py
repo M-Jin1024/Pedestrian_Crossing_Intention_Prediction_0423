@@ -49,6 +49,196 @@ from sklearn.preprocessing import StandardScaler
 from tensorflow.keras.losses import BinaryCrossentropy
 
 
+class UncertaintyWeightedModel(tf.keras.Model):
+    """
+    Keras model wrapper that applies the uncertainty-weighted multi-task loss from PedCMT:
+        L = L_cls / sigma_cls^2 + L_reg / sigma_reg^2 + log(sigma_cls) + log(sigma_reg)
+    where sigma_{cls,reg} are learnable scalars.
+    """
+
+    def __init__(self, inputs, outputs, cls_loss=None, reg_loss=None, **kwargs):
+        super().__init__(inputs=inputs, outputs=outputs, **kwargs)
+        self.cls_loss_fn = cls_loss or tf.keras.losses.BinaryCrossentropy()
+        self.reg_loss_fn = reg_loss or tf.keras.losses.MeanSquaredError()
+
+        # learnable log-sigmas keep sigma positive via softplus
+        self.log_sigma_cls = self.add_weight(
+            name='log_sigma_cls', shape=(), initializer='zeros', trainable=True)
+        self.log_sigma_reg = self.add_weight(
+            name='log_sigma_reg', shape=(), initializer='zeros', trainable=True)
+
+        # trackers so fit() can report loss components just like standard compile
+        self.loss_tracker = tf.keras.metrics.Mean(name='loss')
+        self.cls_loss_tracker = tf.keras.metrics.Mean(name='cls_loss')
+        self.reg_loss_tracker = tf.keras.metrics.Mean(name='reg_loss')
+
+    def _split_targets(self, y):
+        if isinstance(y, dict):
+            return y.get('intention'), y.get('etraj')
+        if isinstance(y, (list, tuple)):
+            if len(y) >= 2:
+                return y[0], y[1]
+            if len(y) == 1:
+                return y[0], None
+        return y, None
+
+    def _split_sample_weights(self, sample_weight):
+        if isinstance(sample_weight, dict):
+            return sample_weight.get('intention'), sample_weight.get('etraj')
+        if isinstance(sample_weight, (list, tuple)):
+            if len(sample_weight) >= 2:
+                return sample_weight[0], sample_weight[1]
+            if len(sample_weight) == 1:
+                return sample_weight[0], None
+        return sample_weight, None
+
+    def _compute_combined_loss(self, cls_loss, reg_loss, has_reg_loss):
+        # sigma_cls = tf.nn.softplus(self.log_sigma_cls) + 1e-6
+        # total_loss = cls_loss / tf.square(sigma_cls) + tf.math.log(sigma_cls)
+
+        # sigma_reg = tf.nn.softplus(self.log_sigma_reg) + 1e-6
+        # if has_reg_loss:
+        #     total_loss += reg_loss / (2 * tf.square(sigma_reg)) + tf.math.log(sigma_reg)
+        # return total_loss
+        return cls_loss
+
+    @property
+    def metrics(self):
+        base = [self.loss_tracker, self.cls_loss_tracker, self.reg_loss_tracker]
+        if hasattr(self, 'compiled_metrics'):
+            return base + self.compiled_metrics.metrics
+        return base
+
+    def train_step(self, data):
+        x, y, sample_weight = tf.keras.utils.unpack_x_y_sample_weight(data)
+        y_int_true, y_traj_true = self._split_targets(y)
+        sw_int, sw_traj = self._split_sample_weights(sample_weight)
+
+        with tf.GradientTape() as tape:
+            y_int_pred, y_traj_pred = self(x, training=True)
+            cls_loss = self.cls_loss_fn(y_int_true, y_int_pred, sample_weight=sw_int)
+
+            has_reg_target = y_traj_true is not None
+            if has_reg_target:
+                reg_loss = self.reg_loss_fn(y_traj_true, y_traj_pred, sample_weight=sw_traj)
+            else:
+                reg_loss = tf.constant(0.0, dtype=cls_loss.dtype)
+
+            combined_loss = self._compute_combined_loss(cls_loss, reg_loss, has_reg_target)
+            reg_losses = tf.add_n(self.losses) if self.losses else 0.0
+            total_loss = combined_loss + reg_losses
+
+        gradients = tape.gradient(total_loss, self.trainable_variables)
+        self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
+
+        self.loss_tracker.update_state(total_loss)
+        self.cls_loss_tracker.update_state(cls_loss)
+        self.reg_loss_tracker.update_state(reg_loss)
+
+        metrics_y_true = [
+            y_int_true,
+            y_traj_true if y_traj_true is not None else y_traj_pred
+        ]
+        metrics_y_pred = [y_int_pred, y_traj_pred]
+        metrics_sample_weight = None
+        if sw_int is not None or sw_traj is not None:
+            metrics_sample_weight = [sw_int, sw_traj]
+        self.compiled_metrics.update_state(metrics_y_true, metrics_y_pred, metrics_sample_weight)
+
+        return {m.name: m.result() for m in self.metrics}
+
+    def test_step(self, data):
+        x, y, sample_weight = tf.keras.utils.unpack_x_y_sample_weight(data)
+        y_int_true, y_traj_true = self._split_targets(y)
+        sw_int, sw_traj = self._split_sample_weights(sample_weight)
+
+        y_int_pred, y_traj_pred = self(x, training=False)
+        cls_loss = self.cls_loss_fn(y_int_true, y_int_pred, sample_weight=sw_int)
+        has_reg_target = y_traj_true is not None
+        if has_reg_target:
+            reg_loss = self.reg_loss_fn(y_traj_true, y_traj_pred, sample_weight=sw_traj)
+        else:
+            reg_loss = tf.constant(0.0, dtype=cls_loss.dtype)
+
+        combined_loss = self._compute_combined_loss(cls_loss, reg_loss, has_reg_target)
+        reg_losses = tf.add_n(self.losses) if self.losses else 0.0
+        total_loss = combined_loss + reg_losses
+
+        self.loss_tracker.update_state(total_loss)
+        self.cls_loss_tracker.update_state(cls_loss)
+        self.reg_loss_tracker.update_state(reg_loss)
+
+        metrics_y_true = [
+            y_int_true,
+            y_traj_true if y_traj_true is not None else y_traj_pred
+        ]
+        metrics_y_pred = [y_int_pred, y_traj_pred]
+        metrics_sample_weight = None
+        if sw_int is not None or sw_traj is not None:
+            metrics_sample_weight = [sw_int, sw_traj]
+        self.compiled_metrics.update_state(metrics_y_true, metrics_y_pred, metrics_sample_weight)
+
+        return {m.name: m.result() for m in self.metrics}
+
+
+tf.keras.utils.get_custom_objects()['UncertaintyWeightedModel'] = UncertaintyWeightedModel
+
+
+def _has_intention_and_etraj(model):
+    try:
+        return {'intention', 'etraj'}.issubset(set(model.output_names))
+    except AttributeError:
+        return False
+
+
+def maybe_apply_uncertainty_wrapper(model):
+    if isinstance(model, UncertaintyWeightedModel):
+        return model
+    if _has_intention_and_etraj(model):
+        return UncertaintyWeightedModel(inputs=model.inputs, outputs=model.outputs, name=model.name)
+    return model
+
+
+class SigmaLoggingCallback(tf.keras.callbacks.Callback):
+    """在 Keras 默认日志输出中添加 sigma 指标"""
+
+    def _maybe_add_metric(self, logs, name, value):
+        if value is None:
+            return
+        logs[name] = value
+        logs[f'val_{name}'] = value
+
+    def on_train_begin(self, logs=None):
+        metrics = self.params.get('metrics') if isinstance(self.params, dict) else None
+        if isinstance(metrics, list):
+            for name in ['sigma_cls', 'sigma_reg', 'val_sigma_cls', 'val_sigma_reg']:
+                if name not in metrics:
+                    metrics.append(name)
+
+    def on_epoch_end(self, epoch, logs=None):
+        logs = logs or {}
+        model = self.model
+        sigma_cls = None
+        sigma_reg = None
+
+        if hasattr(model, 'log_sigma_cls'):
+            sigma_cls = float((tf.nn.softplus(model.log_sigma_cls) + 1e-6).numpy())
+        if hasattr(model, 'log_sigma_reg'):
+            sigma_reg = float((tf.nn.softplus(model.log_sigma_reg) + 1e-6).numpy())
+
+        self._maybe_add_metric(logs, 'sigma_cls', sigma_cls)
+        self._maybe_add_metric(logs, 'sigma_reg', sigma_reg)
+
+        if sigma_cls is not None or sigma_reg is not None:
+            parts = []
+            if sigma_cls is not None:
+                parts.append(f"sigma_cls={sigma_cls:.4f}")
+            if sigma_reg is not None:
+                parts.append(f"sigma_reg={sigma_reg:.4f}")
+            if parts:
+                print(f"[Sigma] Epoch {epoch + 1}: {' '.join(parts)}")
+
+
 # ================================
 # Base Class
 # ================================
@@ -154,7 +344,10 @@ class ActionPredict(object):
                 data_val = data_val[0]
 
         # Create model
-        train_model = self.get_model(data_train['data_params'])
+        train_model = maybe_apply_uncertainty_wrapper(
+            self.get_model(data_train['data_params'])
+        )
+        uses_uncertainty_loss = isinstance(train_model, UncertaintyWeightedModel)
 
         # 统计参数数量
         total_params = train_model.count_params()
@@ -187,21 +380,28 @@ class ActionPredict(object):
         # base_lr = 3e-4          # 可按你现在的学习率起步
         # weight_decay = 1e-4     # 替代原先各层 L2(3e-4)
 
-        train_model.compile(
-            loss={
-                'intention': 'binary_crossentropy',
-                'etraj': 'mse'
-            },
-            loss_weights={
-                'intention': 1,
-                'etraj': 0.0000  # 轨迹 loss 权重可调
-            },
-            optimizer=optimizer,
-            metrics={
-                'intention': ['accuracy'],
-                'etraj': ['mae']
-            }
-        )
+        compile_metrics = {
+            'intention': ['accuracy']
+        }
+
+        if uses_uncertainty_loss:
+            train_model.compile(
+                optimizer=optimizer,
+                metrics=compile_metrics
+            )
+        else:
+            train_model.compile(
+                loss={
+                    'intention': 'binary_crossentropy',
+                    'etraj': 'mse'
+                },
+                loss_weights={
+                    'intention': 1,
+                    'etraj': 0.0000  # 轨迹 loss 权重可调
+                },
+                optimizer=optimizer,
+                metrics=compile_metrics
+            )
 
         # === 新的回调设置：保存每个epoch的训练结果 ===
         callbacks = []
@@ -220,6 +420,9 @@ class ActionPredict(object):
             log_frequency=1  # 每个epoch都记录
         )
         callbacks.append(log_callback)
+
+        if uses_uncertainty_loss:
+            callbacks.append(SigmaLoggingCallback())
         
         # 5. 学习率调度器（可选）
         if model_opts.get('use_lr_scheduler', False):
@@ -293,7 +496,9 @@ class ActionPredict(object):
         with open(os.path.join(model_path, 'configs.yaml'), 'r') as fid:
             opts = yaml.safe_load(fid)
 
-        test_model = load_model(os.path.join(model_path, 'model.h5'))
+        custom_objects = {'UncertaintyWeightedModel': UncertaintyWeightedModel}
+        test_model = load_model(os.path.join(model_path, 'model.h5'),
+                                custom_objects=custom_objects)
         # test_model.summary()
 
         test_data = self.get_data('test', data_test, {**opts['model_opts'], 'batch_size': 1})
@@ -841,15 +1046,15 @@ class Transformer_depth(ActionPredict):
             d['ped_center_diff'].extend([diffs[i:i + obs_length] for i in
                                             range(start_idx, end_idx + 1, 1 if overlap == 0 else int((1 - overlap) * obs_length))])
             # 下一帧 4维 bbox（像素坐标）
-            # d['trajectory'].extend([[seq[i + obs_length][0] / data_raw['image_dimension'][0], seq[i + obs_length][1] / data_raw['image_dimension'][1],
-            #                          seq[i + obs_length][2] / data_raw['image_dimension'][0], seq[i + obs_length][3] / data_raw['image_dimension'][1]]
-            #                         for i in range(start_idx, end_idx + 1, 1 if overlap == 0 else int((1 - overlap) * obs_length))])
+            d['trajectory'].extend([[seq[i + obs_length][0] / data_raw['image_dimension'][0], seq[i + obs_length][1] / data_raw['image_dimension'][1],
+                                     seq[i + obs_length][2] / data_raw['image_dimension'][0], seq[i + obs_length][3] / data_raw['image_dimension'][1]]
+                                    for i in range(start_idx, end_idx + 1, 1 if overlap == 0 else int((1 - overlap) * obs_length))])
             # d['trajectory'].extend([[seq[i + obs_length][0] + time_to_event[0] - 1, seq[i + obs_length][1] + time_to_event[0] - 1,
             #                             seq[i + obs_length][2] + time_to_event[0] - 1, seq[i + obs_length][3] + time_to_event[0] - 1]
             #                         for i in range(start_idx, end_idx + 1, 1 if overlap == 0 else int((1 - overlap) * obs_length))])
-            d['trajectory'].extend([[seq[i + obs_length][0], seq[i + obs_length][1],
-                                     seq[i + obs_length][2], seq[i + obs_length][3]]
-                                    for i in range(start_idx, end_idx + 1, 1 if overlap == 0 else int((1 - overlap) * obs_length))])
+            # d['trajectory'].extend([[seq[i + obs_length][0], seq[i + obs_length][1],
+            #                          seq[i + obs_length][2], seq[i + obs_length][3]]
+            #                         for i in range(start_idx, end_idx + 1, 1 if overlap == 0 else int((1 - overlap) * obs_length))])
 
         # ========== 深度信息 ==========
         import os, pickle
