@@ -18,6 +18,7 @@ from jaad_data import JAAD
 from pie_data import PIE
 # if use WATCH_PED data:
 from watch_ped_data import WATCH_PED
+from seed_utils import set_global_determinism
 
 import tensorflow as tf
 # tf.test.is_gpu_available()
@@ -110,8 +111,15 @@ def run(config_file=None):
         configs['model_opts']['time_to_event'][1]
     configs['data_opts']['min_track_size'] = configs['model_opts']['obs_length'] + tte
 
+    exp_opts_cfg = model_configs.get('exp_opts', {})
+    if 'datasets' not in exp_opts_cfg:
+        raise ValueError('配置缺少 exp_opts.datasets，无法确定要训练的数据集')
+    seed_value = exp_opts_cfg.get('seed', 42)
+
     # update model and training options from the config file
-    for dataset_idx, dataset in enumerate(model_configs['exp_opts']['datasets']):
+    for dataset_idx, dataset in enumerate(exp_opts_cfg['datasets']):
+        per_dataset_seed = seed_value[dataset_idx] if isinstance(seed_value, (list, tuple)) else seed_value
+        set_global_determinism(per_dataset_seed)
         
         # # clear GPU memory
         # device = cuda.get_current_device()
@@ -122,9 +130,9 @@ def run(config_file=None):
         configs['data_opts']['sample_type'] = 'beh' if 'beh' in dataset else 'all'
         configs['model_opts']['overlap'] = 0.6 if 'pie' in dataset else 0.8
         configs['model_opts']['dataset'] = dataset.split('_')[0]
-        configs['train_opts']['batch_size'] = model_configs['exp_opts']['batch_size'][dataset_idx]
-        configs['train_opts']['lr'] = model_configs['exp_opts']['lr'][dataset_idx]
-        configs['train_opts']['epochs'] = model_configs['exp_opts']['epochs'][dataset_idx]
+        configs['train_opts']['batch_size'] = exp_opts_cfg['batch_size'][dataset_idx]
+        configs['train_opts']['lr'] = exp_opts_cfg['lr'][dataset_idx]
+        configs['train_opts']['epochs'] = exp_opts_cfg['epochs'][dataset_idx]
         model_name = configs['model_opts']['model']
         # Remove speed in case the dataset is jaad
         if 'RNN' in model_name and 'jaad' in dataset:

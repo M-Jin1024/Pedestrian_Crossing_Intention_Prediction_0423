@@ -20,6 +20,7 @@ from action_predict import action_prediction  # 使用我们在 action_predict.p
 from jaad_data import JAAD
 from pie_data import PIE
 from watch_ped_data import WATCH_PED
+from seed_utils import set_global_determinism
 
 # ========= GPU 设置 =========
 gpus = tf.config.experimental.list_physical_devices('GPU')
@@ -76,13 +77,14 @@ def get_model_files(path):
 
 
 # ========= 核心测试函数（强制生成器 + 从生成器取标签）=========
-def test_single_model(model_file_path, configs, imdb, beh_seq_test):
+def test_single_model(model_file_path, configs, imdb, beh_seq_test, seed):
     """
     测试单个模型文件（强制使用生成器）
     """
     print(f"\n🔍 测试模型: {os.path.basename(model_file_path)}")
 
     try:
+        set_global_determinism(seed)
         from tensorflow.keras.models import load_model
         from sklearn.metrics import accuracy_score, f1_score, roc_auc_score, precision_score, recall_score
 
@@ -180,6 +182,7 @@ def test_model_path(path):
     # 1) 加载配置
     configs = load_config_from_path(path)
     print("✅ 配置文件加载成功")
+    seed = configs.get('exp_opts', {}).get('seed', 42)
 
     # 2) 初始化数据集
     ds = configs['model_opts']['dataset']
@@ -210,7 +213,7 @@ def test_model_path(path):
     for i, model_path in enumerate(model_files, 1):
         print("\n" + "=" * 60)
         print("测试单个模型" if len(model_files) == 1 else f"进度: {i}/{len(model_files)}")
-        result = test_single_model(model_path, configs, imdb, beh_seq_test)
+        result = test_single_model(model_path, configs, imdb, beh_seq_test, seed)
         results.append(result)
         if result['status'] == 'success':
             print(f"✅ 准确率: {result['accuracy']:.4f}, AUC: {result['auc']:.4f}, F1: {result['f1']:.4f}")

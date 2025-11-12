@@ -93,14 +93,14 @@ class UncertaintyWeightedModel(tf.keras.Model):
         return sample_weight, None
 
     def _compute_combined_loss(self, cls_loss, reg_loss, has_reg_loss):
-        # sigma_cls = tf.nn.softplus(self.log_sigma_cls) + 1e-6
-        # total_loss = cls_loss / tf.square(sigma_cls) + tf.math.log(sigma_cls)
+        sigma_cls = tf.nn.softplus(self.log_sigma_cls) + 1e-6
+        total_loss = cls_loss / tf.square(sigma_cls) + tf.math.log(sigma_cls)
 
-        # sigma_reg = tf.nn.softplus(self.log_sigma_reg) + 1e-6
-        # if has_reg_loss:
-        #     total_loss += reg_loss / (2 * tf.square(sigma_reg)) + tf.math.log(sigma_reg)
-        # return total_loss
-        return cls_loss
+        sigma_reg = tf.nn.softplus(self.log_sigma_reg) + 1e-6
+        if has_reg_loss:
+            total_loss += reg_loss / (2 * tf.square(sigma_reg)) + tf.math.log(sigma_reg)
+        return total_loss
+        # return cls_loss
 
     @property
     def metrics(self):

@@ -21,6 +21,7 @@ exp_opts:
   batch_size: [2]
   epochs: [30]
   lr: [5.0e-05]
+  seed: 46
 
 # exp_opts:
 #   datasets: [jaad_all]
