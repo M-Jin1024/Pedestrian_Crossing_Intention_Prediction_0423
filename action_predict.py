@@ -46,7 +46,42 @@ from sklearn.metrics import (accuracy_score, precision_score, recall_score,
 from sklearn.svm import LinearSVC
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
-from tensorflow.keras.losses import BinaryCrossentropy
+from tensorflow.keras.losses import BinaryCrossentropy, Loss
+
+
+class BinaryFocalLoss(Loss):
+    def __init__(self, gamma=2.0, alpha=0.25, reduction=tf.keras.losses.Reduction.AUTO,
+                 name='binary_focal_loss'):
+        super().__init__(reduction=reduction, name=name)
+        self.gamma = gamma
+        self.alpha = alpha
+
+    def call(self, y_true, y_pred):
+        y_true = tf.cast(y_true, tf.float32)
+        y_pred = tf.clip_by_value(y_pred, tf.keras.backend.epsilon(), 1.0 - tf.keras.backend.epsilon())
+        cross_entropy = -(y_true * tf.math.log(y_pred) +
+                          (1.0 - y_true) * tf.math.log(1.0 - y_pred))
+        p_t = tf.where(tf.equal(y_true, 1.0), y_pred, 1.0 - y_pred)
+        alpha_factor = tf.where(tf.equal(y_true, 1.0), self.alpha, 1.0 - self.alpha)
+        modulating_factor = tf.math.pow(1.0 - p_t, self.gamma)
+        loss = alpha_factor * modulating_factor * cross_entropy
+        return tf.reduce_mean(loss, axis=-1)
+
+
+class FocalL2Loss(Loss):
+    def __init__(self, gamma=1.5, epsilon=1e-6, reduction=tf.keras.losses.Reduction.AUTO,
+                 name='focal_l2_loss'):
+        super().__init__(reduction=reduction, name=name)
+        self.gamma = gamma
+        self.epsilon = epsilon
+
+    def call(self, y_true, y_pred):
+        y_true = tf.cast(y_true, tf.float32)
+        error = y_true - y_pred
+        squared = tf.square(error)
+        modulating = tf.pow(tf.abs(error) + self.epsilon, self.gamma)
+        loss = modulating * squared
+        return tf.reduce_mean(loss, axis=-1)
 
 
 class UncertaintyWeightedModel(tf.keras.Model):
@@ -58,8 +93,8 @@ class UncertaintyWeightedModel(tf.keras.Model):
 
     def __init__(self, inputs, outputs, cls_loss=None, reg_loss=None, **kwargs):
         super().__init__(inputs=inputs, outputs=outputs, **kwargs)
-        self.cls_loss_fn = cls_loss or tf.keras.losses.BinaryCrossentropy()
-        self.reg_loss_fn = reg_loss or tf.keras.losses.MeanSquaredError()
+        self.cls_loss_fn = cls_loss or BinaryFocalLoss()
+        self.reg_loss_fn = reg_loss or FocalL2Loss()
 
         he_init = tf.keras.initializers.HeNormal()
         self.sigma_cls = self.add_weight(
@@ -194,6 +229,8 @@ class UncertaintyWeightedModel(tf.keras.Model):
 
 
 tf.keras.utils.get_custom_objects()['UncertaintyWeightedModel'] = UncertaintyWeightedModel
+tf.keras.utils.get_custom_objects()['BinaryFocalLoss'] = BinaryFocalLoss
+tf.keras.utils.get_custom_objects()['FocalL2Loss'] = FocalL2Loss
 
 
 def _has_intention_and_etraj(model):
@@ -405,8 +442,8 @@ class ActionPredict(object):
         else:
             train_model.compile(
                 loss={
-                    'intention': 'binary_crossentropy',
-                    'etraj': 'mse'
+                    'intention': BinaryFocalLoss(),
+                    'etraj': FocalL2Loss()
                 },
                 loss_weights={
                     'intention': 1,
@@ -509,7 +546,11 @@ class ActionPredict(object):
         with open(os.path.join(model_path, 'configs.yaml'), 'r') as fid:
             opts = yaml.safe_load(fid)
 
-        custom_objects = {'UncertaintyWeightedModel': UncertaintyWeightedModel}
+        custom_objects = {
+            'UncertaintyWeightedModel': UncertaintyWeightedModel,
+            'BinaryFocalLoss': BinaryFocalLoss,
+            'FocalL2Loss': FocalL2Loss
+        }
         test_model = load_model(os.path.join(model_path, 'model.h5'),
                                 custom_objects=custom_objects)
         # test_model.summary()
@@ -609,18 +650,7 @@ class DataGenerator(Sequence):
         self.stack_feats = stack_feats
         self.indices = None
         self.on_epoch_end()
-        self.class_weight = class_weight  # 若外部未提供，则自动估计
-
-        # —— 自动依据训练标签估计正负类权重（仅用于 intention），不需要配置文件
-        y_all = self.labels[0] if (isinstance(self.labels, list) and len(self.labels) > 0) else self.labels
-        if self.class_weight is None and y_all is not None:
-            y_flat = np.asarray(y_all).astype(np.int32).reshape(-1)
-            pos = int(np.sum(y_flat))
-            neg = int(y_flat.shape[0] - pos)
-            total = max(1, pos + neg)
-            # 经典做法：权重与频率成反比；谁少谁权重大
-            self.class_weight = {0: pos / total, 1: neg / total}
-            print(f"[DataGenerator] auto class_weight -> {self.class_weight}")
+        self.class_weight = None  # 不再使用 class weight
 
     def __len__(self):
         return int(np.floor(len(self.data[0]) / self.batch_size))
@@ -700,21 +730,14 @@ class DataGenerator(Sequence):
     def _generate_sample_weight(self, y):
         """
         统一规则（无配置、无模式）：
-        - intention：按类不平衡自动权重（class_weight）
-        - etraj：    与 intention 完全一致（按 y_int 的 class_weight），
-                     这样“正类/负类轨迹”自然得到不同权重，且不需要手动设置任何参数。
+        - intention：不再使用 class weight，所有样本权重为 1
+        - etraj：    与 intention 保持一致；若轨迹标签无效则置 0，避免污染
         """
         if isinstance(y, list) and len(y) > 1:
             y_int = np.asarray(y[0]).astype(np.int32).reshape(-1)
             etraj_labels = y[1]
 
-            # intention 权重
-            if self.class_weight is not None:
-                sw_int = np.where(y_int == 1, self.class_weight[1], self.class_weight[0]).astype('float32')
-            else:
-                sw_int = np.ones_like(y_int, dtype='float32')
-
-            # etraj 权重 = intention 权重（无需配置）
+            sw_int = np.ones_like(y_int, dtype='float32')
             sw_etraj = sw_int.copy()
 
             # 若轨迹标签缺失/无效（比如 NaN/Inf），则将该样本的 etraj 权重置 0，避免污染回归损失
@@ -730,11 +753,7 @@ class DataGenerator(Sequence):
 
         else:
             y_int = np.asarray(y).astype(np.int32).reshape(-1)
-            if self.class_weight is not None:
-                sw = np.where(y_int == 1, self.class_weight[1], self.class_weight[0]).astype('float32')
-            else:
-                sw = np.ones_like(y_int, dtype='float32')
-            return sw
+            return np.ones_like(y_int, dtype='float32')
 
 @tf.keras.utils.register_keras_serializable()
 class CLSTokenLayer(tf.keras.layers.Layer):
