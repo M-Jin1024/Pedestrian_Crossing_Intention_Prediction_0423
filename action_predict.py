@@ -61,11 +61,17 @@ class UncertaintyWeightedModel(tf.keras.Model):
         self.cls_loss_fn = cls_loss or tf.keras.losses.BinaryCrossentropy()
         self.reg_loss_fn = reg_loss or tf.keras.losses.MeanSquaredError()
 
-        # learnable log-sigmas keep sigma positive via softplus
-        self.log_sigma_cls = self.add_weight(
-            name='log_sigma_cls', shape=(), initializer='zeros', trainable=True)
-        self.log_sigma_reg = self.add_weight(
-            name='log_sigma_reg', shape=(), initializer='zeros', trainable=True)
+        he_init = tf.keras.initializers.HeNormal()
+        self.sigma_cls = self.add_weight(
+            name='sigma_cls',
+            shape=(1, 1),
+            initializer=he_init,
+            trainable=True)
+        self.sigma_reg = self.add_weight(
+            name='sigma_reg',
+            shape=(1, 1),
+            initializer=he_init,
+            trainable=True)
 
         # trackers so fit() can report loss components just like standard compile
         self.loss_tracker = tf.keras.metrics.Mean(name='loss')
@@ -92,13 +98,19 @@ class UncertaintyWeightedModel(tf.keras.Model):
                 return sample_weight[0], None
         return sample_weight, None
 
+    def _sigma_value(self, var):
+        sigma = tf.math.abs(var) + 1e-6
+        return tf.reshape(sigma, [])
+
+    def get_sigma_values(self):
+        return self._sigma_value(self.sigma_cls), self._sigma_value(self.sigma_reg)
+
     def _compute_combined_loss(self, cls_loss, reg_loss, has_reg_loss):
-        sigma_cls = tf.nn.softplus(self.log_sigma_cls) + 1e-6
+        sigma_cls, sigma_reg = self.get_sigma_values()
         total_loss = cls_loss / tf.square(sigma_cls) + tf.math.log(sigma_cls)
 
-        sigma_reg = tf.nn.softplus(self.log_sigma_reg) + 1e-6
         if has_reg_loss:
-            total_loss += reg_loss / (2 * tf.square(sigma_reg)) + tf.math.log(sigma_reg)
+            total_loss += reg_loss / tf.square(sigma_reg) + tf.math.log(sigma_reg)
         return total_loss
         # return cls_loss
 
@@ -221,10 +233,11 @@ class SigmaLoggingCallback(tf.keras.callbacks.Callback):
         sigma_cls = None
         sigma_reg = None
 
-        if hasattr(model, 'log_sigma_cls'):
-            sigma_cls = float((tf.nn.softplus(model.log_sigma_cls) + 1e-6).numpy())
-        if hasattr(model, 'log_sigma_reg'):
-            sigma_reg = float((tf.nn.softplus(model.log_sigma_reg) + 1e-6).numpy())
+        getter = getattr(model, 'get_sigma_values', None)
+        if getter is not None:
+            sigma_cls_tensor, sigma_reg_tensor = getter()
+            sigma_cls = float(sigma_cls_tensor.numpy())
+            sigma_reg = float(sigma_reg_tensor.numpy())
 
         self._maybe_add_metric(logs, 'sigma_cls', sigma_cls)
         self._maybe_add_metric(logs, 'sigma_reg', sigma_reg)
@@ -1046,12 +1059,13 @@ class Transformer_depth(ActionPredict):
             d['ped_center_diff'].extend([diffs[i:i + obs_length] for i in
                                             range(start_idx, end_idx + 1, 1 if overlap == 0 else int((1 - overlap) * obs_length))])
             # 下一帧 4维 bbox（像素坐标）
-            d['trajectory'].extend([[seq[i + obs_length][0] / data_raw['image_dimension'][0], seq[i + obs_length][1] / data_raw['image_dimension'][1],
-                                     seq[i + obs_length][2] / data_raw['image_dimension'][0], seq[i + obs_length][3] / data_raw['image_dimension'][1]]
-                                    for i in range(start_idx, end_idx + 1, 1 if overlap == 0 else int((1 - overlap) * obs_length))])
-            # d['trajectory'].extend([[seq[i + obs_length][0] + time_to_event[0] - 1, seq[i + obs_length][1] + time_to_event[0] - 1,
-            #                             seq[i + obs_length][2] + time_to_event[0] - 1, seq[i + obs_length][3] + time_to_event[0] - 1]
+            # d['trajectory'].extend([[seq[i + obs_length][0] / data_raw['image_dimension'][0], seq[i + obs_length][1] / data_raw['image_dimension'][1],
+            #                          seq[i + obs_length][2] / data_raw['image_dimension'][0], seq[i + obs_length][3] / data_raw['image_dimension'][1]]
             #                         for i in range(start_idx, end_idx + 1, 1 if overlap == 0 else int((1 - overlap) * obs_length))])
+            # 下0.5秒bbox
+            d['trajectory'].extend([[(seq[i + obs_length][0] + time_to_event[0] - 1) / data_raw['image_dimension'][0], (seq[i + obs_length][1] + time_to_event[0] - 1) / data_raw['image_dimension'][1],
+                                        (seq[i + obs_length][2] + time_to_event[0] - 1) / data_raw['image_dimension'][0], (seq[i + obs_length][3] + time_to_event[0] - 1) / data_raw['image_dimension'][1]]
+                                    for i in range(start_idx, end_idx + 1, 1 if overlap == 0 else int((1 - overlap) * obs_length))])
             # d['trajectory'].extend([[seq[i + obs_length][0], seq[i + obs_length][1],
             #                          seq[i + obs_length][2], seq[i + obs_length][3]]
             #                         for i in range(start_idx, end_idx + 1, 1 if overlap == 0 else int((1 - overlap) * obs_length))])

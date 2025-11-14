@@ -105,6 +105,10 @@ def run(config_file=None):
     for k in ['model_opts', 'net_opts']:
         if k in model_configs:
             configs[k].update(model_configs[k])
+    
+    # 保存 exp_opts 到 configs（用于后续保存到 configs.yaml）
+    if 'exp_opts' in model_configs:
+        configs['exp_opts'] = model_configs['exp_opts']
 
     # Calculate min track size
     tte = configs['model_opts']['time_to_event'] if isinstance(configs['model_opts']['time_to_event'], int) else \
@@ -114,12 +118,18 @@ def run(config_file=None):
     exp_opts_cfg = model_configs.get('exp_opts', {})
     if 'datasets' not in exp_opts_cfg:
         raise ValueError('配置缺少 exp_opts.datasets，无法确定要训练的数据集')
-    seed_value = exp_opts_cfg.get('seed', 42)
+    seed_value = exp_opts_cfg.get('seed', None)  # 默认为 None，表示不固定随机种子
 
     # update model and training options from the config file
     for dataset_idx, dataset in enumerate(exp_opts_cfg['datasets']):
         per_dataset_seed = seed_value[dataset_idx] if isinstance(seed_value, (list, tuple)) else seed_value
-        set_global_determinism(per_dataset_seed)
+        
+        # 只有当 seed 不为 None 时才设置随机种子
+        if per_dataset_seed is not None:
+            set_global_determinism(per_dataset_seed)
+            print(f"✓ 使用固定随机种子: {per_dataset_seed}")
+        else:
+            print("⚠ 未设置随机种子，每次训练结果将不同")
         
         # # clear GPU memory
         # device = cuda.get_current_device()
@@ -196,7 +206,17 @@ def run(config_file=None):
 
         # write_to_yaml(yaml_path=os.path.join(saved_files_path, 'results.yaml'), data=data)
 
-        data = configs
+        # 保存配置，包含当前使用的 seed 值
+        data = configs.copy()
+        # 更新 exp_opts 为当前 dataset 的单一配置
+        if 'exp_opts' in data:
+            data['exp_opts'] = {
+                'datasets': [dataset],
+                'batch_size': [configs['train_opts']['batch_size']],
+                'epochs': [configs['train_opts']['epochs']],
+                'lr': [configs['train_opts']['lr']],
+                'seed': per_dataset_seed  # 保存当前使用的 seed
+            }
         write_to_yaml(yaml_path=os.path.join(saved_files_path, 'configs.yaml'), data=data)
 
         print('Model saved to {}'.format(saved_files_path))
