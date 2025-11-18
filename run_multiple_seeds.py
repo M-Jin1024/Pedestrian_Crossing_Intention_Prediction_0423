@@ -13,6 +13,22 @@ import time
 from datetime import datetime
 
 
+DEFAULT_SEEDS = [42, 43, 44, 45, 46]
+
+
+def parse_seed(value):
+    """允许将 'null'/'none' 当做占位符的 seed 解析函数"""
+    if value is None:
+        return None
+    value_str = str(value).strip()
+    if value_str.lower() in ('null', 'none', ''):
+        return None
+    try:
+        return int(value_str)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(f"无法解析 seed 值: {value}") from exc
+
+
 def find_latest_model_dir(base_path="data/models"):
     """找到最新创建的模型目录"""
     if not os.path.exists(base_path):
@@ -55,27 +71,34 @@ def run_with_seed(config_file, seed_value, run_index, total_runs, skip_test=Fals
         total_runs: 总运行次数
         skip_test: 是否跳过测试
     """
+    seed_label = seed_value if seed_value is not None else "配置文件默认"
     print(f"\n{'='*80}")
-    print(f"🚀 开始运行 [{run_index}/{total_runs}] - Seed: {seed_value}")
+    print(f"🚀 开始运行 [{run_index}/{total_runs}] - Seed: {seed_label}")
     print(f"时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"{'='*80}\n")
     
-    # 读取原始配置文件
-    with open(config_file, 'r') as f:
-        config_data = yaml.safe_load(f)
-    
-    # 更新seed值
-    if 'exp_opts' not in config_data:
-        config_data['exp_opts'] = {}
-    config_data['exp_opts']['seed'] = seed_value
-    
-    # 创建临时配置文件
-    temp_config_file = config_file.replace('.yaml', f'_seed_{seed_value}_temp.yaml')
-    with open(temp_config_file, 'w') as f:
-        yaml.dump(config_data, f, default_flow_style=False, allow_unicode=True)
-    
-    print(f"📄 临时配置文件已创建: {temp_config_file}")
-    print(f"🎯 使用 Seed = {seed_value} 开始训练...\n")
+    temp_config_file = None
+    config_to_use = config_file
+    if seed_value is not None:
+        # 读取原始配置文件
+        with open(config_file, 'r') as f:
+            config_data = yaml.safe_load(f)
+        
+        # 更新seed值
+        if 'exp_opts' not in config_data:
+            config_data['exp_opts'] = {}
+        config_data['exp_opts']['seed'] = seed_value
+        
+        # 创建临时配置文件
+        temp_config_file = config_file.replace('.yaml', f'_seed_{seed_value}_temp.yaml')
+        with open(temp_config_file, 'w') as f:
+            yaml.dump(config_data, f, default_flow_style=False, allow_unicode=True)
+        
+        config_to_use = temp_config_file
+        print(f"📄 临时配置文件已创建: {temp_config_file}")
+        print(f"🎯 使用 Seed = {seed_value} 开始训练...\n")
+    else:
+        print("🎯 未覆盖 seed，使用配置文件中的设置开始训练...\n")
     
     try:
         # ========== 1. 运行训练 ==========
@@ -83,20 +106,20 @@ def run_with_seed(config_file, seed_value, run_index, total_runs, skip_test=Fals
         result = subprocess.run([
             sys.executable,
             'train_test.py',
-            '-c', temp_config_file
+            '-c', config_to_use
         ])
         train_end_time = time.time()
         
         # 清理临时配置文件
-        if os.path.exists(temp_config_file):
+        if temp_config_file and os.path.exists(temp_config_file):
             os.remove(temp_config_file)
             print(f"\n🗑️  临时配置文件已删除: {temp_config_file}")
         
         if result.returncode != 0:
-            print(f"\n❌ Seed {seed_value} 的训练失败，返回码: {result.returncode}")
+            print(f"\n❌ Seed {seed_label} 的训练失败，返回码: {result.returncode}")
             return False, None
         
-        print(f"\n✅ Seed {seed_value} 的训练完成 (耗时: {(train_end_time - train_start_time) / 60:.1f} 分钟)")
+        print(f"\n✅ Seed {seed_label} 的训练完成 (耗时: {(train_end_time - train_start_time) / 60:.1f} 分钟)")
         
         # ========== 2. 运行测试 ==========
         if not skip_test:
@@ -119,15 +142,15 @@ def run_with_seed(config_file, seed_value, run_index, total_runs, skip_test=Fals
             test_end_time = time.time()
             
             if test_result.returncode != 0:
-                print(f"\n⚠️  Seed {seed_value} 的测试失败，返回码: {test_result.returncode}")
+                print(f"\n⚠️  Seed {seed_label} 的测试失败，返回码: {test_result.returncode}")
                 print(f"   但训练成功，继续下一个seed")
                 return True, model_dir
             
-            print(f"\n✅ Seed {seed_value} 的测试完成 (耗时: {(test_end_time - test_start_time) / 60:.1f} 分钟)")
+            print(f"\n✅ Seed {seed_label} 的测试完成 (耗时: {(test_end_time - test_start_time) / 60:.1f} 分钟)")
             
             total_time = (test_end_time - train_start_time) / 60
             print(f"\n{'='*80}")
-            print(f"✓ Seed {seed_value} 的训练和测试全部完成 (总耗时: {total_time:.1f} 分钟)")
+            print(f"✓ Seed {seed_label} 的训练和测试全部完成 (总耗时: {total_time:.1f} 分钟)")
             print(f"{'='*80}")
             
             return True, model_dir
@@ -137,13 +160,13 @@ def run_with_seed(config_file, seed_value, run_index, total_runs, skip_test=Fals
     except KeyboardInterrupt:
         print(f"\n⚠️  用户中断了运行")
         # 清理临时配置文件
-        if os.path.exists(temp_config_file):
+        if temp_config_file and os.path.exists(temp_config_file):
             os.remove(temp_config_file)
         raise
     except Exception as e:
         print(f"\n❌ 运行出错: {e}")
         # 清理临时配置文件
-        if os.path.exists(temp_config_file):
+        if temp_config_file and os.path.exists(temp_config_file):
             os.remove(temp_config_file)
         return False, None
 
@@ -169,29 +192,37 @@ def main():
     )
     parser.add_argument('-c', '--config', required=True, 
                        help='配置文件路径')
-    parser.add_argument('--seeds', type=int, nargs='+', 
-                       default=[42, 43, 44, 45, 46],
-                       help='要使用的seed值列表 (默认: 42, 43, 44, 45, 46)')
+    parser.add_argument('--seeds', type=parse_seed, nargs='+', 
+                       default=None,
+                       help="要使用的seed值列表 (默认: 42, 43, 44, 45, 46，"
+                            "可用'null'或'none'作为占位)")
     parser.add_argument('--skip-test', action='store_true',
                        help='跳过测试，只进行训练')
     parser.add_argument('--continue-on-error', action='store_true',
                        help='如果某个seed运行失败，继续运行后续的seed')
     
     args = parser.parse_args()
+    if args.seeds is None:
+        seeds = list(DEFAULT_SEEDS)
+    else:
+        seeds = list(args.seeds)
     
     # 检查配置文件是否存在
     if not os.path.exists(args.config):
         print(f"❌ 错误: 配置文件不存在: {args.config}")
         sys.exit(1)
     
-    seeds = args.seeds
     total_runs = len(seeds)
     
     print(f"\n{'='*80}")
     print(f"🎯 多Seed训练{'和测试' if not args.skip_test else ''}脚本")
     print(f"{'='*80}")
     print(f"配置文件: {args.config}")
-    print(f"Seed列表: {seeds}")
+    seed_info = [
+        seed if seed is not None else "配置文件默认"
+        for seed in seeds
+    ]
+    print(f"Seed列表: {seed_info}")
     print(f"总运行次数: {total_runs}")
     print(f"运行模式: {'仅训练' if args.skip_test else '训练+测试'}")
     print(f"失败后继续: {'是' if args.continue_on_error else '否'}")
@@ -209,11 +240,13 @@ def main():
             if success:
                 success_count += 1
                 if model_dir:
-                    model_dirs.append((seed, model_dir))
+                    seed_display = seed if seed is not None else "配置文件默认"
+                    model_dirs.append((seed_display, model_dir))
             else:
-                failed_seeds.append(seed)
+                failed_seeds.append(seed if seed is not None else "配置文件默认")
                 if not args.continue_on_error:
-                    print(f"\n⚠️  由于 seed {seed} 运行失败，停止后续运行")
+                    failed_label = seed if seed is not None else "配置文件默认"
+                    print(f"\n⚠️  由于 seed {failed_label} 运行失败，停止后续运行")
                     break
     
     except KeyboardInterrupt:

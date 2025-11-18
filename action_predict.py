@@ -955,7 +955,7 @@ class Transformer_depth(ActionPredict):
         # —— Intention head
         ci = Dropout(0.2, name='cls_dropout')(cls_out)
         h = Dense(128, activation='gelu', kernel_regularizer=regularizers.l2(5e-3), name='head_fc1')(ci)
-        h = Dropout(0.1, name='head_dropout1')(h)
+        h = Dropout(0.2, name='head_dropout1')(h)
         intention = Dense(1, activation='sigmoid', name='intention')(h)
 
         # —— Etraj head（独立分支）

@@ -1,0 +1,24 @@
+exp_opts:
+  batch_size:
+  - 2
+  datasets:
+  - jaad_all
+  epochs:
+  - 80
+  lr:
+  - 5.0e-05
+  seed: 42
+model_opts:
+  apply_class_weights: true
+  generator: true
+  model: Transformer_depth
+  normalize_boxes: true
+  obs_input_type:
+  - box
+  - depth
+  - vehicle_speed
+  - ped_speed
+net_opts:
+  dropout: 0.1
+  num_hidden_units: 256
+  regularizer_val: 0.0001

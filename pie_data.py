@@ -87,7 +87,7 @@ class PIE(object):
         :param image_set: Image set split
         :return: Set ids of the image set
         """
-        image_set_nums = {'train': ['set01', 'set02', 'set04'],
+        image_set_nums = {'train': ['set01', 'set02', 'set06'],
                           'val': ['set05', 'set06'],
                           'test': ['set03'],
                           'all': ['set01', 'set02', 'set03',

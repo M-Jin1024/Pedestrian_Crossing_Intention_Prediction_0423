@@ -108,11 +108,21 @@
                 "config_files/my/my_jaad.yaml",
                 // "config_files/my/my_pie.yaml",
                 "--seeds",
-                "42",
-                "43",
-                "44",
-                "45",
-                "46"
+                // "42",
+                // "43",
+                // "44",
+                // "45",
+                // "46"
+                "null",
+                "null",
+                "null",
+                "null",
+                "null",
+                "null",
+                "null",
+                "null",
+                "null",
+                "null",
             ],
             "console": "integratedTerminal"
         },
@@ -124,7 +134,7 @@
             "program": "${workspaceFolder}/test_only_pipeline.py",
             "args": [
                 "-m",
-                "data/models/jaad/Transformer_depth/12Nov2025-12h04m04s"
+                "data/models/jaad/Transformer_depth/16Nov2025-00h16m28s"
             ],
             "console": "integratedTerminal"
         },
