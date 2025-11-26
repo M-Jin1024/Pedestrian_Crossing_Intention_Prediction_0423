@@ -46,7 +46,7 @@ from sklearn.metrics import (accuracy_score, precision_score, recall_score,
 from sklearn.svm import LinearSVC
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
-from tensorflow.keras.losses import BinaryCrossentropy, Loss
+from tensorflow.keras.losses import BinaryCrossentropy, Loss, MeanSquaredError
 
 
 class BinaryFocalLoss(Loss):
@@ -57,6 +57,8 @@ class BinaryFocalLoss(Loss):
         self.alpha = alpha
 
     def call(self, y_true, y_pred):
+        # Focal Loss 公式：FL(p_t) = - alpha_t * (1 - p_t)^{gamma} * log(p_t)
+        # 其中 p_t 表示针对真实标签的预测概率，alpha_t 控制正负样本权重，gamma 调节难易样本的抑制强度。
         y_true = tf.cast(y_true, tf.float32)
         y_pred = tf.clip_by_value(y_pred, tf.keras.backend.epsilon(), 1.0 - tf.keras.backend.epsilon())
         cross_entropy = -(y_true * tf.math.log(y_pred) +
@@ -94,8 +96,13 @@ class UncertaintyWeightedModel(tf.keras.Model):
     def __init__(self, inputs, outputs, cls_loss=None, reg_loss=None, **kwargs):
         super().__init__(inputs=inputs, outputs=outputs, **kwargs)
         self.cls_loss_fn = cls_loss or BinaryFocalLoss()
+        # Temporarily disable focal regression loss; fall back to MSE
+        # self.reg_loss_fn = reg_loss or MeanSquaredError()
         self.reg_loss_fn = reg_loss or FocalL2Loss()
 
+        # 不确定性加权多任务损失：
+        # L = L_cls / sigma_cls^2 + L_reg / sigma_reg^2 + log(sigma_cls) + log(sigma_reg)
+        # sigma_cls 与 sigma_reg 为可学习标量，数值越大代表对应任务的不确定性越高，模型会自动调节两个任务的相对权重。
         he_init = tf.keras.initializers.HeNormal()
         self.sigma_cls = self.add_weight(
             name='sigma_cls',
@@ -443,7 +450,9 @@ class ActionPredict(object):
             train_model.compile(
                 loss={
                     'intention': BinaryFocalLoss(),
+                    # Temporarily switch etraj loss to standard MSE
                     'etraj': FocalL2Loss()
+                    # 'etraj': MeanSquaredError()
                 },
                 loss_weights={
                     'intention': 1,
@@ -953,9 +962,9 @@ class Transformer_depth(ActionPredict):
         cls_out = Lambda(lambda t: t[:, 0, :], name='cls_slice')(x)
         
         # —— Intention head
-        ci = Dropout(0.2, name='cls_dropout')(cls_out)
+        ci = Dropout(0.1, name='cls_dropout')(cls_out)
         h = Dense(128, activation='gelu', kernel_regularizer=regularizers.l2(5e-3), name='head_fc1')(ci)
-        h = Dropout(0.2, name='head_dropout1')(h)
+        h = Dropout(0.1, name='head_dropout1')(h)
         intention = Dense(1, activation='sigmoid', name='intention')(h)
 
         # —— Etraj head（独立分支）
@@ -1099,7 +1108,7 @@ class Transformer_depth(ActionPredict):
             f'depth_{self.dataset}_{self.sample}_{data_type}_'
             f'obs{obs_length}_tte{time_to_event[0]}-{time_to_event[1]}_overlap{overlap}.pkl'
             if dataset == 'jaad' else
-            f'depth_{self.dataset}_obs{obs_length}_tte{time_to_event[0]}-{time_to_event[1]}_overlap{overlap}.pkl'
+            f'depth_{self.dataset}_{data_type}_obs{obs_length}_tte{time_to_event[0]}-{time_to_event[1]}_overlap{overlap}.pkl'
         )
         cache_path = os.path.join(cache_dir, cache_filename)
 
