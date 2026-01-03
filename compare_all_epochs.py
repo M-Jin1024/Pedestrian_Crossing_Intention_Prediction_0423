@@ -16,10 +16,9 @@ from datetime import datetime
 import numpy as np
 import tensorflow as tf
 
-from action_predict import action_prediction  # 使用我们在 action_predict.py 里注册的模型类
+from action_predict import action_prediction
 from jaad_data import JAAD
 from pie_data import PIE
-from watch_ped_data import WATCH_PED
 from seed_utils import set_global_determinism
 
 # ========= GPU 设置 =========
@@ -29,10 +28,9 @@ if gpus:
         tf.config.experimental.set_memory_growth(gpu, True)
 
 
-# ========= 数据集路径（按你的机器实际路径修改）=========
-path_jaad = "/home/minshi/Pedestrian_Crossing_Intention_Prediction/JAAD"
-path_pie = "/media/minshi/WD_2T/PIE/annotations"
-path_watch_ped = "/home/minshi/Pedestrian_Crossing_Intention_Prediction/Watch_Ped"
+# ========= Dataset paths - set via environment variables or use default relative paths =========
+path_jaad = os.environ.get('JAAD_PATH', './JAAD')
+path_pie = os.environ.get('PIE_PATH', './PIE')
 
 
 # ========= 工具函数 =========
@@ -190,10 +188,8 @@ def test_model_path(path):
         imdb = PIE(data_path=path_pie)
     elif ds == 'jaad':
         imdb = JAAD(data_path=path_jaad)
-    elif ds in ("watch_ped", "watch"):
-        imdb = WATCH_PED(data_path=path_watch_ped)
     else:
-        raise ValueError(f"不支持的数据集: {ds}")
+        raise ValueError(f"Unsupported dataset: {ds}")
     print("✅ 数据集初始化成功")
 
     # 3) 生成测试数据（与训练同样的接口）

@@ -14,10 +14,7 @@ from action_predict import ActionPredict
 #from new_model import NewModel, HybridModel, MultiRNN3D, MultiRNN3D_MATT
 
 from jaad_data import JAAD
-# if use PIE data:
 from pie_data import PIE
-# if use WATCH_PED data:
-from watch_ped_data import WATCH_PED
 from seed_utils import set_global_determinism
 
 import tensorflow as tf
@@ -35,11 +32,9 @@ for gpu in gpus:
 
 
 
-# path to JAAD dataset, please change to your local path
-# path_jaad = "/home/steven/submission_T_IV/JAAD"
-path_jaad = "/home/minshi/Pedestrian_Crossing_Intention_Prediction/JAAD"
-path_pie = "/media/minshi/WD_2T/PIE/annotations"
-path_watch_ped = "/home/minshi/Pedestrian_Crossing_Intention_Prediction/Watch_Ped"
+# Path to datasets - can be set via environment variables or use default relative paths
+path_jaad = os.environ.get('JAAD_PATH', './JAAD')
+path_pie = os.environ.get('PIE_PATH', './PIE')
 # config = tf.compat.v1.ConfigProto()
 # # config.gpu_options.per_process_gpu_memory_fraction=0.8
 # config.gpu_options.allow_growth = True
@@ -169,15 +164,10 @@ def run(config_file=None):
             imdb = PIE(data_path=path_pie)
 
         elif configs['model_opts']['dataset'] == 'jaad':
-            # if use docker:
-            # imdb = JAAD(data_path=os.environ.copy()['JAAD_PATH'])
-
-            # if use local path
             imdb = JAAD(data_path=path_jaad)
 
-        elif configs['model_opts']['dataset'] in ["watch_ped", "watch"]:
-
-            imdb = WATCH_PED(data_path=path_watch_ped)
+        else:
+            raise ValueError(f"Unsupported dataset: {configs['model_opts']['dataset']}")
 
         # get sequences
         beh_seq_train = imdb.generate_data_trajectory_sequence('train', **configs['data_opts'])
