@@ -32,9 +32,9 @@ for gpu in gpus:
 
 
 
-# Path to datasets - can be set via environment variables or use default relative paths
+# Path to datasets - prefer env vars, but fall back to local absolute paths when unset
 path_jaad = os.environ.get('JAAD_PATH', './JAAD')
-path_pie = os.environ.get('PIE_PATH', './PIE')
+path_pie = os.environ.get('PIE_PATH', '/media/minshi/WD_2T/PIE/annotations')
 # config = tf.compat.v1.ConfigProto()
 # # config.gpu_options.per_process_gpu_memory_fraction=0.8
 # config.gpu_options.allow_growth = True

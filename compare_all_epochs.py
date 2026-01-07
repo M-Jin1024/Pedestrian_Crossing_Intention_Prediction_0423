@@ -28,9 +28,9 @@ if gpus:
         tf.config.experimental.set_memory_growth(gpu, True)
 
 
-# ========= Dataset paths - set via environment variables or use default relative paths =========
+# ========= Dataset paths - prefer env vars, fall back to absolute paths when unset =========
 path_jaad = os.environ.get('JAAD_PATH', './JAAD')
-path_pie = os.environ.get('PIE_PATH', './PIE')
+path_pie = os.environ.get('PIE_PATH', '/media/minshi/WD_2T/PIE/annotations')
 
 
 # ========= 工具函数 =========

@@ -105,8 +105,8 @@
             
             "args": [
                 "-c",
-                // "config_files/my/my_jaad.yaml",
-                "config_files/my/my_pie.yaml",
+                "config_files/my/my_jaad.yaml",
+                // "config_files/my/my_pie.yaml",
                 "--seeds",
                 "42",
                 "43",

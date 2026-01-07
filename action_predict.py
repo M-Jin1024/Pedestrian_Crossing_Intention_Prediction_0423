@@ -1,38 +1,24 @@
 # -*- coding: utf-8 -*-
 import os
 import time
-import tarfile
 import pickle
 import yaml
-import json
-import wget
 import cv2
-import scipy.misc
 import numpy as np
-import pandas as pd
-from PIL import Image
-import matplotlib
 import tensorflow as tf
-from matplotlib import pyplot as plt
-from matplotlib import gridspec
 
 from utils import *
 from custom_callbacks import EpochSaveCallback, DetailedLoggingCallback, MetricsVisualizationCallback
-from base_models import AlexNet, C3DNet, convert_to_fcn, C3DNet2
-from base_models import I3DNet
 
 from tensorflow.keras.layers import (Input, Concatenate, Dense, GRU, LSTM, GRUCell,
                                      Dropout, LSTMCell, RNN, Flatten, Average, Add,
                                      ConvLSTM2D, Conv2D, GlobalAveragePooling2D, GlobalMaxPooling2D,
                                      Lambda, dot, concatenate, Activation)
 from tensorflow.keras.models import Model, load_model
-from tensorflow.keras.callbacks import ReduceLROnPlateau, EarlyStopping, ModelCheckpoint
 from tensorflow.keras.utils import plot_model, Sequence, register_keras_serializable
 from tensorflow.keras.optimizers import Adam, SGD, RMSprop
 from tensorflow.keras.metrics import Precision, Recall
 from tensorflow.keras import regularizers
-from tensorflow.keras import backend as K
-from tensorflow.keras.activations import gelu
 
 try:
     from tensorflow.keras.layers import LayerNormalization, MultiHeadAttention
@@ -43,9 +29,6 @@ except ImportError:
 
 from sklearn.metrics import (accuracy_score, precision_score, recall_score,
                              f1_score, roc_auc_score, roc_curve, precision_recall_curve)
-from sklearn.svm import LinearSVC
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler
 from tensorflow.keras.losses import BinaryCrossentropy, Loss, MeanSquaredError
 
 
@@ -441,26 +424,26 @@ class ActionPredict(object):
             'intention': ['accuracy']
         }
 
-        if uses_uncertainty_loss:
-            train_model.compile(
-                optimizer=optimizer,
-                metrics=compile_metrics
-            )
-        else:
-            train_model.compile(
-                loss={
-                    'intention': BinaryFocalLoss(),
-                    # Temporarily switch etraj loss to standard MSE
-                    'etraj': FocalL2Loss()
-                    # 'etraj': MeanSquaredError()
-                },
-                loss_weights={
-                    'intention': 1,
-                    'etraj': 0.0000  # 轨迹 loss 权重可调
-                },
-                optimizer=optimizer,
-                metrics=compile_metrics
-            )
+        # if uses_uncertainty_loss:
+        train_model.compile(
+            optimizer=optimizer,
+            metrics=compile_metrics
+        )
+        # else:
+        #     train_model.compile(
+        #         loss={
+        #             'intention': BinaryFocalLoss(),
+        #             # Temporarily switch etraj loss to standard MSE
+        #             'etraj': FocalL2Loss()
+        #             # 'etraj': MeanSquaredError()
+        #         },
+        #         loss_weights={
+        #             'intention': 1,
+        #             'etraj': 0.0000  # 轨迹 loss 权重可调
+        #         },
+        #         optimizer=optimizer,
+        #         metrics=compile_metrics
+        #     )
 
         # === 新的回调设置：保存每个epoch的训练结果 ===
         callbacks = []
@@ -501,7 +484,6 @@ class ActionPredict(object):
                                   batch_size=None,
                                   epochs=epochs,
                                   validation_data=data_val,
-                                #   class_weight=class_w,
                                   verbose=1,
                                   callbacks=callbacks)
         # print(history.history.keys())
@@ -642,8 +624,7 @@ class DataGenerator(Sequence):
                  batch_size=32,
                  shuffle=True,
                  to_fit=True,
-                 stack_feats=False,
-                 class_weight=None):
+                 stack_feats=False):
         self.data = data
         self.labels = labels
         self.process = process
@@ -659,7 +640,6 @@ class DataGenerator(Sequence):
         self.stack_feats = stack_feats
         self.indices = None
         self.on_epoch_end()
-        self.class_weight = None  # 不再使用 class weight
 
     def __len__(self):
         return int(np.floor(len(self.data[0]) / self.batch_size))
@@ -805,7 +785,6 @@ class Transformer_depth(ActionPredict):
 
     def embedding_norm_block(self, input_tensor, name=None):
         """Dense + LayerNorm"""
-        # x = Dense(self.d_model, activation=None, kernel_regularizer=regularizers.L2(0.0003), name=f'{name}_embedding_norm')(input_tensor)
         x = Dense(self.d_model, activation=None, name=f'{name}_embedding_norm')(input_tensor)
         x = LayerNormalization(name=f'{name}_ln')(x)
         return x
@@ -818,7 +797,6 @@ class Transformer_depth(ActionPredict):
             value_dim=self.d_model // self.num_heads,
             output_shape=self.d_model,
             dropout=dropout,
-            # kernel_regularizer=regularizers.L2(0.001),  # 权重正则化
             name=f'{name}_attn1'
         )
         attn2 = MultiHeadAttention(
@@ -827,18 +805,15 @@ class Transformer_depth(ActionPredict):
             value_dim=self.d_model // self.num_heads,
             output_shape=self.d_model,
             dropout=dropout,
-            # kernel_regularizer=regularizers.L2(0.001),  # 权重正则化
             name=f'{name}_attn2'
         )
         y1 = attn1(query=x2, value=x1, key=x1)
         y1 = Dropout(dropout)(y1)
         y1 = Add(name=f'{name}_add1')([x1, y1])
-        # y1 = LayerNormalization(name=f'{name}_ln1')(y1)
 
         y2 = attn2(query=x1, value=x2, key=x2)
         y2 = Dropout(dropout)(y2)
         y2 = Add(name=f'{name}_add2')([x2, y2])
-        # y2 = LayerNormalization(name=f'{name}_ln2')(y2)
 
         return Add(name=f'{name}_fuse')([y1, y2])
     
@@ -849,16 +824,8 @@ class Transformer_depth(ActionPredict):
         shortcut = x
         x = Dense(2 * self.d_model, activation=tf.nn.gelu, kernel_regularizer=regularizers.L2(0.005), name=f'{name}_fem_ffn1_dense1')(x)
         x = Dense(self.d_model, activation=None, kernel_regularizer=regularizers.L2(0.005), name=f'{name}_fem_ffn1_dense2')(x)
-        # x = Dense(2 * self.d_model, activation=tf.nn.gelu, kernel_regularizer=regularizers.L2(0.005), name=f'{name}_fem_ffn2_dense1')(x)
-        # x = Dense(self.d_model, activation=None, kernel_regularizer=regularizers.L2(0.005), name=f'{name}_fem_ffn2_dense2')(x)
-        # x = Dense(2 * self.d_model, activation=tf.nn.gelu, name=f'{name}_fem_ffn1_dense1')(x)
-        # x = Dense(self.d_model, activation=None, name=f'{name}_fem_ffn1_dense2')(x)
         x = Dropout(dropout, name=f'{name}_fem_drop')(x)
-        # x = tfa.layers.StochasticDepth(
-        #     survival_probability=0.9, name=f'{name}_sd'
-        #     )([x, x_in])  # 随机深度
         x = Add(name=f'{name}_fem_add')([shortcut, x])
-        # x = Add(name=f'{name}_fem_add')([x_in, x])
         return x
 
     def positional_encoding(self, x):
@@ -912,7 +879,6 @@ class Transformer_depth(ActionPredict):
             value_dim=self.d_model // self.num_heads,   # 显式给出
             output_shape=self.d_model,                  # 输出回 d_model，方便残差相加
             dropout=dropout,
-            # kernel_regularizer=regularizers.L2(0.001),  # 权重正则化
             name=f'{name}_mhsa'
         )
 
@@ -920,11 +886,7 @@ class Transformer_depth(ActionPredict):
             query=x_norm, value=x_norm, key=x_norm,
         )
         x = Dropout(dropout, name=f'{name}_mhsa_drop')(attn_out)
-        # x = tfa.layers.StochasticDepth(
-        #     survival_probability=0.9, name=f'{name}_sd'
-        # )([x, x_in])
         x = Add(name=f'{name}_mhsa_res')([x, x_norm])
-        # x = Add(name=f'{name}_mhsa_res')([x, x_in])
         return x
 
     def get_model(self, data_params):
@@ -956,21 +918,29 @@ class Transformer_depth(ActionPredict):
 
         x = self.mhsa_block(x, dropout = 0.1, name='mhsa_1')
         x = self.fem_block(x, dropout = 0.1, name='fem_after_mhsa_1')
-        # x = self.mhsa_block(x, dropout = 0.2, name='mhsa_2')
-        # x = self.fem_block(x, dropout = 0.2, name='fem_after_mhsa_2')
+        x = self.mhsa_block(x, dropout = 0.1, name='mhsa_2')
+        x = self.fem_block(x, dropout = 0.1, name='fem_after_mhsa_2')
 
         cls_out = Lambda(lambda t: t[:, 0, :], name='cls_slice')(x)
         
         # —— Intention head
-        ci = Dropout(0.1, name='cls_dropout')(cls_out)
-        h = Dense(128, activation='gelu', kernel_regularizer=regularizers.l2(5e-3), name='head_fc1')(ci)
+        ci = Dropout(0.1, name='cls_dropout_0')(cls_out)
+        h = Dense(256, activation='gelu', name='head_fc0')(ci)
+
+        ci = Dropout(0.1, name='cls_dropout')(h)
+        # h = Dense(128, activation='gelu', kernel_regularizer=regularizers.l2(5e-3), name='head_fc1')(ci)
+        h = Dense(128, activation='gelu', name='head_fc1')(ci)
         h = Dropout(0.1, name='head_dropout1')(h)
         intention = Dense(1, activation='sigmoid', name='intention')(h)
 
         # —— Etraj head（独立分支）
-        # ce = Dropout(0.1, name='cls_dropout_e')(cls_out)
-        e = Dense(128, activation='gelu', kernel_regularizer=regularizers.l2(5e-3), name='head_fc2')(cls_out)
-        # e = Dropout(0.1, name='head_dropout2')(e)
+        ce = Dropout(0.1, name='cls_dropout_e0')(cls_out)
+        e = Dense(256, activation='gelu', name='head_fc2_0')(ce)
+
+        ce = Dropout(0.1, name='cls_dropout_e')(e)
+        # e = Dense(128, activation='gelu', kernel_regularizer=regularizers.l2(5e-3), name='head_fc2')(ce)
+        e = Dense(128, activation='gelu', name='head_fc2')(ce)
+        e = Dropout(0.1, name='head_dropout2')(e)
         etraj = Dense(4, activation=None, name='etraj')(e)
 
         model = Model(inputs=[bbox_in, depth_in, vehspd_in, pedspd_in],
@@ -996,7 +966,7 @@ class Transformer_depth(ActionPredict):
         # model_opts_3d = model_opts.copy()
         if model_opts['dataset'] == 'jaad' or 'pie':
             data['vehicle_speed'] = data['speed']
-            data['ped_speed'] = data['ped_center_diff']
+            data['ped_speed'] = data['ped_bbox_diff']
 
         for d_type in model_opts['obs_input_type']:
             features = data[d_type]
@@ -1071,8 +1041,8 @@ class Transformer_depth(ActionPredict):
                                 range(start_idx, end_idx + 1, olap_res)])
                 d[k] = seqs
 
-        # ========== 计算 ped_center_diff 与 轨迹（4维 bbox ==========
-        d['ped_center_diff'] = []
+        # ========== 计算 ped_bbox_diff 与 轨迹 ==========
+        d['ped_bbox_diff'] = []
         d['trajectory'] = []
         for idx, seq in enumerate(data_raw['bbox']):
             # 帧间差分
@@ -1084,7 +1054,7 @@ class Transformer_depth(ActionPredict):
 
             start_idx = len(seq) - obs_length - time_to_event[1]
             end_idx = len(seq) - obs_length - time_to_event[0]
-            d['ped_center_diff'].extend([diffs[i:i + obs_length] for i in
+            d['ped_bbox_diff'].extend([diffs[i:i + obs_length] for i in
                                             range(start_idx, end_idx + 1, 1 if overlap == 0 else int((1 - overlap) * obs_length))])
             # 下一帧 4维 bbox（像素坐标）
             # d['trajectory'].extend([[seq[i + obs_length][0] / data_raw['image_dimension'][0], seq[i + obs_length][1] / data_raw['image_dimension'][1],
@@ -1167,7 +1137,7 @@ class Transformer_depth(ActionPredict):
         d['crossing'] = np.array(d['crossing'])[:, 0, :]
         pos_count = np.count_nonzero(d['crossing'])
         neg_count = len(d['crossing']) - pos_count
-        if dataset == 'pie':
-            print("Negative {} and positive {} sample counts".format(neg_count, pos_count))
+
+        print("Negative {} and positive {} sample counts".format(neg_count, pos_count))
 
         return d, neg_count, pos_count
