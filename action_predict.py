@@ -8,16 +8,12 @@ import numpy as np
 import tensorflow as tf
 
 from utils import *
-from custom_callbacks import EpochSaveCallback, DetailedLoggingCallback, MetricsVisualizationCallback
+from custom_callbacks import EpochSaveCallback, DetailedLoggingCallback
 
-from tensorflow.keras.layers import (Input, Concatenate, Dense, GRU, LSTM, GRUCell,
-                                     Dropout, LSTMCell, RNN, Flatten, Average, Add,
-                                     ConvLSTM2D, Conv2D, GlobalAveragePooling2D, GlobalMaxPooling2D,
-                                     Lambda, dot, concatenate, Activation)
+from tensorflow.keras.layers import (Input, Concatenate, Dense, Dropout, Add, Lambda)
 from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.utils import plot_model, Sequence, register_keras_serializable
 from tensorflow.keras.optimizers import Adam, SGD, RMSprop
-from tensorflow.keras.metrics import Precision, Recall
 from tensorflow.keras import regularizers
 
 try:
@@ -28,8 +24,8 @@ except ImportError:
     from tensorflow.keras.layers import MultiHeadAttention
 
 from sklearn.metrics import (accuracy_score, precision_score, recall_score,
-                             f1_score, roc_auc_score, roc_curve, precision_recall_curve)
-from tensorflow.keras.losses import BinaryCrossentropy, Loss, MeanSquaredError
+                             f1_score, roc_auc_score)
+from tensorflow.keras.losses import Loss
 
 
 class BinaryFocalLoss(Loss):
@@ -79,8 +75,6 @@ class UncertaintyWeightedModel(tf.keras.Model):
     def __init__(self, inputs, outputs, cls_loss=None, reg_loss=None, **kwargs):
         super().__init__(inputs=inputs, outputs=outputs, **kwargs)
         self.cls_loss_fn = cls_loss or BinaryFocalLoss()
-        # Temporarily disable focal regression loss; fall back to MSE
-        # self.reg_loss_fn = reg_loss or MeanSquaredError()
         self.reg_loss_fn = reg_loss or FocalL2Loss()
 
         # 不确定性加权多任务损失：
@@ -288,9 +282,7 @@ class ActionPredict(object):
     """
 
     def __init__(self,
-                 global_pooling='avg',
                  regularizer_val=0.0001,
-                 backbone='vgg16',
                  **kwargs):
         """
         Class init function
@@ -300,10 +292,7 @@ class ActionPredict(object):
             backbone: Backbone for generating convolutional features
         """
         # Network parameters
-        self._regularizer_value = regularizer_val
         self._regularizer = regularizers.l2(regularizer_val)
-        self._global_pooling = global_pooling
-        self._backbone = backbone
         self._generator = None # use data generator for train/test 
 
 
@@ -402,7 +391,6 @@ class ActionPredict(object):
         print(f"Non-trainable parameters: {non_trainable_params:,}")
         print(f"{'='*60}\n")
 
-        # plot_model(train_model, to_file=path_params['save_folder']+'/model_structure.png', show_shapes=True)
         # Generate detailed model architecture diagram
         plot_model(
             train_model,
@@ -414,38 +402,18 @@ class ActionPredict(object):
         # 显示详细的模型结构
         # train_model.summary()
 
-        # Train the model
-        # class_w = self.class_weights(model_opts['apply_class_weights'], data_train['count'])
         optimizer = self.get_optimizer(optimizer)(lr=lr)
-        # base_lr = 3e-4          # 可按你现在的学习率起步
-        # weight_decay = 1e-4     # 替代原先各层 L2(3e-4)
 
         compile_metrics = {
             'intention': ['accuracy']
         }
 
-        # if uses_uncertainty_loss:
         train_model.compile(
             optimizer=optimizer,
             metrics=compile_metrics
         )
-        # else:
-        #     train_model.compile(
-        #         loss={
-        #             'intention': BinaryFocalLoss(),
-        #             # Temporarily switch etraj loss to standard MSE
-        #             'etraj': FocalL2Loss()
-        #             # 'etraj': MeanSquaredError()
-        #         },
-        #         loss_weights={
-        #             'intention': 1,
-        #             'etraj': 0.0000  # 轨迹 loss 权重可调
-        #         },
-        #         optimizer=optimizer,
-        #         metrics=compile_metrics
-        #     )
 
-        # === 新的回调设置：保存每个epoch的训练结果 ===
+        # === 回调设置 ===
         callbacks = []
         
         # 1. 使用自定义回调保存每个epoch和最佳模型
@@ -466,19 +434,6 @@ class ActionPredict(object):
         if uses_uncertainty_loss:
             callbacks.append(SigmaLoggingCallback())
         
-        # 5. 学习率调度器（可选）
-        if model_opts.get('use_lr_scheduler', False):
-            reduce_lr = tf.keras.callbacks.ReduceLROnPlateau(
-                monitor='val_loss',
-                mode='min',
-                factor=0.2,
-                patience=5,
-                cooldown=1,
-                min_lr=1e-7,
-                verbose=1)
-            callbacks.append(reduce_lr)
-        
-        # data_val = data_val.batch(batch_size)
         history = train_model.fit(x=data_train['data'][0],
                                   y=None if self._generator else data_train['data'][1],
                                   batch_size=None,
@@ -486,7 +441,6 @@ class ActionPredict(object):
                                   validation_data=data_val,
                                   verbose=1,
                                   callbacks=callbacks)
-        # print(history.history.keys())
         if 'checkpoint' not in learning_scheduler:
             print('Train model is saved to {}'.format(model_path))
             train_model.save(model_path)
@@ -496,6 +450,8 @@ class ActionPredict(object):
         with open(model_opts_path, 'wb') as fid:
             pickle.dump(model_opts, fid, pickle.HIGHEST_PROTOCOL)
 
+        
+        # Generate training metrics visualization when using the Transformer_depth model
         if model_opts['model'] == 'Transformer_depth':
             from training_plots import save_training_plots
             save_training_plots(history, path_params, model_opts['model'])
@@ -576,7 +532,6 @@ class ActionPredict(object):
                         picklefile)
 
 
-        # print('acc:{:.2f} auc:{:.2f} f1:{:.2f} precision:{:.2f} recall:{:.2f}'.format(acc, auc, f1, precision, recall))
         print('\n' + '\033[96m' + '='*70 + '\033[0m')
         print('\033[1m\033[92m🎯 MODEL TEST RESULTS 🎯\033[0m')
         print('\033[96m' + '='*70 + '\033[0m')
@@ -587,17 +542,14 @@ class ActionPredict(object):
         print('\033[91mRecall:     \033[0m\033[1m\033[92m{:.4f}\033[0m'.format(recall))
         print('\033[96m' + '='*70 + '\033[0m\n')
 
-
         save_results_path = os.path.join(model_path, '{:.2f}'.format(acc) + '.yaml')
 
         if not os.path.exists(save_results_path):
             results = {'acc': '{:.4f}'.format(acc),
                     'auc': '{:.4f}'.format(auc),
                     'f1': '{:.4f}'.format(f1),
-                    # 'roc': '{:.4f}'.format(roc),
                     'precision': '{:.4f}'.format(precision),
                     'recall': '{:.4f}'.format(recall),
-                    # 'pre_recall_curve': '{:.4f}'.format(pre_recall)
                     }
 
             with open(save_results_path, 'w') as fid:
@@ -654,9 +606,7 @@ class DataGenerator(Sequence):
         X = self._generate_X(indices)
         if self.to_fit:
             y = self._generate_y(indices)
-            sw = self._generate_sample_weight(y)
-            # sw = {'intention': np.array([0, 0.001], dtype=np.float32), 'etraj': np.array([0, 0], dtype=np.float32)}
-            return X, y, sw
+            return X, y
         else:
             return X
 
@@ -716,34 +666,6 @@ class DataGenerator(Sequence):
             else:
                 return np.array(self.labels[indices])
 
-    def _generate_sample_weight(self, y):
-        """
-        统一规则（无配置、无模式）：
-        - intention：不再使用 class weight，所有样本权重为 1
-        - etraj：    与 intention 保持一致；若轨迹标签无效则置 0，避免污染
-        """
-        if isinstance(y, list) and len(y) > 1:
-            y_int = np.asarray(y[0]).astype(np.int32).reshape(-1)
-            etraj_labels = y[1]
-
-            sw_int = np.ones_like(y_int, dtype='float32')
-            sw_etraj = sw_int.copy()
-
-            # 若轨迹标签缺失/无效（比如 NaN/Inf），则将该样本的 etraj 权重置 0，避免污染回归损失
-            if etraj_labels is None:
-                sw_etraj[:] = 0.0
-            else:
-                etraj_np = np.asarray(etraj_labels)
-                invalid = ~np.isfinite(etraj_np).all(axis=1)
-                if invalid.any():
-                    sw_etraj[invalid] = 0.0
-
-            return {'intention': sw_int, 'etraj': sw_etraj}
-
-        else:
-            y_int = np.asarray(y).astype(np.int32).reshape(-1)
-            return np.ones_like(y_int, dtype='float32')
-
 @tf.keras.utils.register_keras_serializable()
 class CLSTokenLayer(tf.keras.layers.Layer):
     def __init__(self, d_model, **kwargs):
@@ -756,10 +678,8 @@ class CLSTokenLayer(tf.keras.layers.Layer):
             name="cls_token"
         )
 
-    # @tf.autograph.experimental.do_not_convert
     def call(self, x):
         batch_size = tf.shape(x)[0]
-        # 返回可广播的 token tensor
         return tf.tile(self.cls_token, [batch_size, 1, 1])
 
     @tf.autograph.experimental.do_not_convert
@@ -985,7 +905,6 @@ class Transformer_depth(ActionPredict):
                                    batch_size=model_opts['batch_size'],
                                    shuffle=data_type != 'test',
                                    to_fit=data_type != 'test'), data['crossing'])  # set y to None
-        # global_pooling=self._global_pooling,
         else:
             _data = (_data, data['crossing'])
 
