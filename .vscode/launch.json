@@ -2,18 +2,50 @@
     "version": "0.2.0",
     
     "configurations": [
-        // {
-        //     "name": "train_depth_jaad",
-        //     "type": "debugpy",
-        //     "request": "launch",
-        //     "python": "/home/minshi/miniconda3/envs/tf26/bin/python",
-        //     "program": "${workspaceFolder}/train_test.py",
-        //     "args": [
-        //         "-c",
-        //         "config_files/my/my_jaad.yaml"
-        //     ],
-        //     "console": "integratedTerminal"
-        // },
+        {
+            "name": "train_test_jaad",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "/home/minshi/miniconda3/envs/tf26/bin/python",
+            "program": "${workspaceFolder}/train_test.py",
+            "args": [
+                "-c",
+                "config_files/my_jaad.yaml"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "train_test_pie",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "/home/minshi/miniconda3/envs/tf26/bin/python",
+            "program": "${workspaceFolder}/train_test.py",
+            "args": [
+                "-c",
+                "config_files/my_pie.yaml"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "test.py",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "/home/minshi/miniconda3/envs/tf26/bin/python",
+            "program": "${workspaceFolder}/test.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "variablePresentation": {
+                "function": "hide",
+                "special": "hide",
+                "class": "group",
+                "all": "group",
+                "protected": "hide",
+                "modules": "hide"
+            },
+            "args": [
+                "/home/minshi/Pedestrian_Crossing_Intention_Prediction/data/models/jaad/Transformer_depth/02Jan2026-22h58m52s_acc_0.6305"
+            ]
+        },
         {
             "name": "jaad_train_and_test_all_epochs",
             "type": "debugpy",
@@ -23,22 +55,10 @@
             
             "args": [
                 "-c",
-                "config_files/my/my_jaad.yaml"
+                "config_files/my_jaad.yaml"
             ],
             "console": "integratedTerminal"
         },
-        // {
-        //     "name": "train_depth_pie",
-        //     "type": "debugpy",
-        //     "request": "launch",
-        //     "python": "/home/minshi/miniconda3/envs/tf26/bin/python",
-        //     "program": "${workspaceFolder}/train_test.py",
-        //     "args": [
-        //         "-c",
-        //         "config_files/my/my_pie.yaml"
-        //     ],
-        //     "console": "integratedTerminal"
-        // },
         {
             "name": "pie_train_and_test_all_epochs",
             "type": "debugpy",
@@ -48,96 +68,23 @@
             
             "args": [
                 "-c",
-                "config_files/my/my_pie.yaml"
+                "config_files/my_pie.yaml"
             ],
             "console": "integratedTerminal"
         },
+
         // {
-        //     "name": "test.py",
+        //     "name": "test_all_epoch",
         //     "type": "debugpy",
         //     "request": "launch",
         //     "python": "/home/minshi/miniconda3/envs/tf26/bin/python",
-        //     "program": "${workspaceFolder}/test.py",
-        //     "console": "integratedTerminal",
-        //     "justMyCode": true,
-        //     "variablePresentation": {
-        //         "function": "hide",
-        //         "special": "hide",
-        //         "class": "group",
-        //         "all": "group",
-        //         "protected": "hide",
-        //         "modules": "hide"
-        //     },
+        //     "program": "${workspaceFolder}/test_only_pipeline.py",
         //     "args": [
-        //         "/home/minshi/Pedestrian_Crossing_Intention_Prediction/data/models/jaad/MASK_PCPA_4_2D/25Apr2025-22h07m23s"
-        //     ]
+        //         "-m",
+        //         "data/models/jaad/Transformer_depth/16Nov2025-00h16m28s"
+        //     ],
+        //     "console": "integratedTerminal"
         // },
-        {
-            "name": "run_sequential_training",
-            "type": "debugpy",
-            "request": "launch",
-            "python": "/home/minshi/miniconda3/envs/tf26/bin/python",
-            "program": "${workspaceFolder}/run_sequential_training.py",
-            "console": "integratedTerminal",
-            "justMyCode": true
-        },
-        {
-            "name": "train_and_test_3_times",
-            "type": "debugpy",
-            "request": "launch",
-            "python": "/home/minshi/miniconda3/envs/tf26/bin/python",
-            "program": "${workspaceFolder}/run_multiple_times.py",
-            
-            "args": [
-                "-c",
-                "config_files/my/my_jaad.yaml",
-                "--times",
-                "3"
-            ],
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "multiple_seeds",
-            "type": "debugpy",
-            "request": "launch",
-            "python": "/home/minshi/miniconda3/envs/tf26/bin/python",
-            "program": "${workspaceFolder}/run_multiple_seeds.py",
-            
-            "args": [
-                "-c",
-                "config_files/my/my_jaad.yaml",
-                // "config_files/my/my_pie.yaml",
-                "--seeds",
-                "42",
-                "43",
-                "44",
-                "45",
-                "46",
-                "null",
-                "null",
-                "null",
-                "null",
-                "null",
-                // "null",
-                // "null",
-                // "null",
-                // "null",
-                // "null",
-            ],
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "test_only_pipeline",
-            "type": "debugpy",
-            "request": "launch",
-            "python": "/home/minshi/miniconda3/envs/tf26/bin/python",
-            "program": "${workspaceFolder}/test_only_pipeline.py",
-            "args": [
-                "-m",
-                "data/models/jaad/Transformer_depth/16Nov2025-00h16m28s"
-            ],
-            "console": "integratedTerminal"
-        },
 
     ]
 }

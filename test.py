@@ -18,10 +18,19 @@ def test_model(saved_files_path=None):
 
     with open(os.path.join(saved_files_path, 'configs.yaml'), 'r') as yamlfile:
         opts = yaml.safe_load(yamlfile)
-    print(opts)
+
     model_opts = opts['model_opts']
     data_opts = opts['data_opts']
     net_opts = opts['net_opts']
+
+    print("\n========== LOADED CONFIG ==========")
+    print(f"Checkpoint path : {saved_files_path}")
+    print(f"Model           : {model_opts['model']}")
+    print(f"Dataset         : {model_opts['dataset']}")
+    print(f"Sample Type     : {data_opts['sample_type']}")
+    print(f"Observation Len : {model_opts['obs_length']}")
+    print(f"Time-To-Event   : {model_opts['time_to_event']}")
+    print("===================================\n")
 
     tte = model_opts['time_to_event'] if isinstance(model_opts['time_to_event'], int) else \
                 model_opts['time_to_event'][1]
@@ -47,8 +56,14 @@ def test_model(saved_files_path=None):
 
     beh_seq_test = imdb.generate_data_trajectory_sequence('test', **data_opts)
     acc, auc, f1, precision, recall = method_class.test(beh_seq_test, saved_files_path)
-    print('test done')
-    print(acc, auc, f1, precision, recall)
+
+    # print("\n========== TEST SUMMARY ==========")
+    # print(f"Accuracy : {acc:.4f}")
+    # print(f"AUC      : {auc:.4f}")
+    # print(f"F1-score : {f1:.4f}")
+    # print(f"Precision: {precision:.4f}")
+    # print(f"Recall   : {recall:.4f}")
+    # print("=======================================\n")
 
 
 if __name__ == '__main__':

@@ -1,0 +1,365 @@
+Training started at 2025-11-18 01:06:12.667186
+================================================================================
+
+Epoch 1 - 2025-11-18 01:06:46
+----------------------------------------
+loss           : 10.172652
+cls_loss       : 0.080109
+reg_loss       : 0.034413
+intention_accuracy: 0.592315
+val_loss       : 6.005777
+val_cls_loss   : 0.074936
+val_reg_loss   : 0.003650
+val_intention_accuracy: 0.727273
+----------------------------------------
+
+Epoch 2 - 2025-11-18 01:07:04
+----------------------------------------
+loss           : 4.083003
+cls_loss       : 0.062778
+reg_loss       : 0.007936
+intention_accuracy: 0.646673
+val_loss       : 2.778930
+val_cls_loss   : 0.085727
+val_reg_loss   : 0.002586
+val_intention_accuracy: 0.727273
+----------------------------------------
+
+Epoch 3 - 2025-11-18 01:07:15
+----------------------------------------
+loss           : 2.087137
+cls_loss       : 0.054801
+reg_loss       : 0.005504
+intention_accuracy: 0.698219
+val_loss       : 1.552873
+val_cls_loss   : 0.061582
+val_reg_loss   : 0.002128
+val_intention_accuracy: 0.607438
+----------------------------------------
+
+Epoch 4 - 2025-11-18 01:07:26
+----------------------------------------
+loss           : 1.171124
+cls_loss       : 0.052383
+reg_loss       : 0.004623
+intention_accuracy: 0.703374
+val_loss       : 0.858694
+val_cls_loss   : 0.079338
+val_reg_loss   : 0.004834
+val_intention_accuracy: 0.665289
+----------------------------------------
+
+Epoch 5 - 2025-11-18 01:07:37
+----------------------------------------
+loss           : 0.562055
+cls_loss       : 0.050041
+reg_loss       : 0.003943
+intention_accuracy: 0.707591
+val_loss       : 0.333081
+val_cls_loss   : 0.072763
+val_reg_loss   : 0.001358
+val_intention_accuracy: 0.640496
+----------------------------------------
+
+Epoch 6 - 2025-11-18 01:07:47
+----------------------------------------
+loss           : 0.113863
+cls_loss       : 0.046418
+reg_loss       : 0.003749
+intention_accuracy: 0.739456
+val_loss       : -0.026281
+val_cls_loss   : 0.092696
+val_reg_loss   : 0.001840
+val_intention_accuracy: 0.719008
+----------------------------------------
+
+Epoch 7 - 2025-11-18 01:07:57
+----------------------------------------
+loss           : -0.228652
+cls_loss       : 0.043304
+reg_loss       : 0.003484
+intention_accuracy: 0.753046
+val_loss       : -0.332286
+val_cls_loss   : 0.082372
+val_reg_loss   : 0.002159
+val_intention_accuracy: 0.541322
+----------------------------------------
+
+Epoch 8 - 2025-11-18 01:08:08
+----------------------------------------
+loss           : -0.504067
+cls_loss       : 0.042312
+reg_loss       : 0.003455
+intention_accuracy: 0.749766
+val_loss       : -0.572471
+val_cls_loss   : 0.090910
+val_reg_loss   : 0.001455
+val_intention_accuracy: 0.545455
+----------------------------------------
+
+Epoch 9 - 2025-11-18 01:08:19
+----------------------------------------
+loss           : -0.751800
+cls_loss       : 0.039364
+reg_loss       : 0.003218
+intention_accuracy: 0.772727
+val_loss       : -0.784852
+val_cls_loss   : 0.099366
+val_reg_loss   : 0.002047
+val_intention_accuracy: 0.528926
+----------------------------------------
+
+Epoch 10 - 2025-11-18 01:08:35
+----------------------------------------
+loss           : -0.993098
+cls_loss       : 0.037192
+reg_loss       : 0.003174
+intention_accuracy: 0.785848
+val_loss       : -0.944423
+val_cls_loss   : 0.138994
+val_reg_loss   : 0.002189
+val_intention_accuracy: 0.632231
+----------------------------------------
+
+Epoch 11 - 2025-11-18 01:08:57
+----------------------------------------
+loss           : -1.248495
+cls_loss       : 0.034915
+reg_loss       : 0.003155
+intention_accuracy: 0.798032
+val_loss       : -1.177104
+val_cls_loss   : 0.142557
+val_reg_loss   : 0.001909
+val_intention_accuracy: 0.578512
+----------------------------------------
+
+Epoch 12 - 2025-11-18 01:09:19
+----------------------------------------
+loss           : -1.538533
+cls_loss       : 0.032798
+reg_loss       : 0.002858
+intention_accuracy: 0.828960
+val_loss       : -1.465826
+val_cls_loss   : 0.122748
+val_reg_loss   : 0.003343
+val_intention_accuracy: 0.516529
+----------------------------------------
+
+Epoch 13 - 2025-11-18 01:09:41
+----------------------------------------
+loss           : -1.872383
+cls_loss       : 0.030640
+reg_loss       : 0.002827
+intention_accuracy: 0.847235
+val_loss       : -1.753004
+val_cls_loss   : 0.149229
+val_reg_loss   : 0.001700
+val_intention_accuracy: 0.636364
+----------------------------------------
+
+Epoch 14 - 2025-11-18 01:09:53
+----------------------------------------
+loss           : -2.254646
+cls_loss       : 0.030165
+reg_loss       : 0.002683
+intention_accuracy: 0.842549
+val_loss       : -2.037562
+val_cls_loss   : 0.148402
+val_reg_loss   : 0.002546
+val_intention_accuracy: 0.557851
+----------------------------------------
+
+Epoch 15 - 2025-11-18 01:10:04
+----------------------------------------
+loss           : -2.568202
+cls_loss       : 0.029289
+reg_loss       : 0.002591
+intention_accuracy: 0.849110
+val_loss       : -1.916458
+val_cls_loss   : 0.215582
+val_reg_loss   : 0.002113
+val_intention_accuracy: 0.702479
+----------------------------------------
+
+Epoch 16 - 2025-11-18 01:10:15
+----------------------------------------
+loss           : -2.761146
+cls_loss       : 0.029631
+reg_loss       : 0.002214
+intention_accuracy: 0.850515
+val_loss       : -1.706529
+val_cls_loss   : 0.250456
+val_reg_loss   : 0.001773
+val_intention_accuracy: 0.706612
+----------------------------------------
+
+Epoch 17 - 2025-11-18 01:10:25
+----------------------------------------
+loss           : -2.906852
+cls_loss       : 0.027707
+reg_loss       : 0.001994
+intention_accuracy: 0.870665
+val_loss       : -2.227394
+val_cls_loss   : 0.150814
+val_reg_loss   : 0.001499
+val_intention_accuracy: 0.607438
+----------------------------------------
+
+Epoch 18 - 2025-11-18 01:10:36
+----------------------------------------
+loss           : -3.020097
+cls_loss       : 0.028353
+reg_loss       : 0.001819
+intention_accuracy: 0.862231
+val_loss       : -1.591681
+val_cls_loss   : 0.200382
+val_reg_loss   : 0.001790
+val_intention_accuracy: 0.652893
+----------------------------------------
+
+Epoch 19 - 2025-11-18 01:10:48
+----------------------------------------
+loss           : -3.101356
+cls_loss       : 0.026289
+reg_loss       : 0.001801
+intention_accuracy: 0.865511
+val_loss       : -1.158866
+val_cls_loss   : 0.226227
+val_reg_loss   : 0.001293
+val_intention_accuracy: 0.657025
+----------------------------------------
+
+Epoch 20 - 2025-11-18 01:11:00
+----------------------------------------
+loss           : -3.156471
+cls_loss       : 0.027225
+reg_loss       : 0.001720
+intention_accuracy: 0.860825
+val_loss       : -1.230970
+val_cls_loss   : 0.189553
+val_reg_loss   : 0.001472
+val_intention_accuracy: 0.669421
+----------------------------------------
+
+Epoch 21 - 2025-11-18 01:11:18
+----------------------------------------
+loss           : -3.231698
+cls_loss       : 0.025568
+reg_loss       : 0.001627
+intention_accuracy: 0.869260
+val_loss       : -0.575322
+val_cls_loss   : 0.213920
+val_reg_loss   : 0.001611
+val_intention_accuracy: 0.615702
+----------------------------------------
+
+Epoch 22 - 2025-11-18 01:11:40
+----------------------------------------
+loss           : -3.223155
+cls_loss       : 0.025300
+reg_loss       : 0.001719
+intention_accuracy: 0.864574
+val_loss       : 0.136209
+val_cls_loss   : 0.235386
+val_reg_loss   : 0.001993
+val_intention_accuracy: 0.669421
+----------------------------------------
+
+Epoch 23 - 2025-11-18 01:12:02
+----------------------------------------
+loss           : -3.289440
+cls_loss       : 0.024130
+reg_loss       : 0.001600
+intention_accuracy: 0.880506
+val_loss       : -0.446295
+val_cls_loss   : 0.182347
+val_reg_loss   : 0.002126
+val_intention_accuracy: 0.661157
+----------------------------------------
+
+Epoch 24 - 2025-11-18 01:12:23
+----------------------------------------
+loss           : -3.346481
+cls_loss       : 0.022607
+reg_loss       : 0.001528
+intention_accuracy: 0.890347
+val_loss       : 1.432245
+val_cls_loss   : 0.281807
+val_reg_loss   : 0.001681
+val_intention_accuracy: 0.661157
+----------------------------------------
+
+Epoch 25 - 2025-11-18 01:12:35
+----------------------------------------
+loss           : -3.343361
+cls_loss       : 0.022798
+reg_loss       : 0.001546
+intention_accuracy: 0.880975
+val_loss       : 0.934367
+val_cls_loss   : 0.229816
+val_reg_loss   : 0.002395
+val_intention_accuracy: 0.665289
+----------------------------------------
+
+Epoch 26 - 2025-11-18 01:12:47
+----------------------------------------
+loss           : -3.370688
+cls_loss       : 0.022553
+reg_loss       : 0.001482
+intention_accuracy: 0.884255
+val_loss       : 1.929021
+val_cls_loss   : 0.283361
+val_reg_loss   : 0.001748
+val_intention_accuracy: 0.669421
+----------------------------------------
+
+Epoch 27 - 2025-11-18 01:12:58
+----------------------------------------
+loss           : -3.388033
+cls_loss       : 0.021446
+reg_loss       : 0.001507
+intention_accuracy: 0.895033
+val_loss       : 1.407846
+val_cls_loss   : 0.249651
+val_reg_loss   : 0.001676
+val_intention_accuracy: 0.603306
+----------------------------------------
+
+Epoch 28 - 2025-11-18 01:13:10
+----------------------------------------
+loss           : -3.455800
+cls_loss       : 0.019573
+reg_loss       : 0.001433
+intention_accuracy: 0.895501
+val_loss       : 4.263988
+val_cls_loss   : 0.370740
+val_reg_loss   : 0.001468
+val_intention_accuracy: 0.632231
+----------------------------------------
+
+Epoch 29 - 2025-11-18 01:13:24
+----------------------------------------
+loss           : -3.454968
+cls_loss       : 0.020779
+reg_loss       : 0.001371
+intention_accuracy: 0.896439
+val_loss       : 3.218014
+val_cls_loss   : 0.313267
+val_reg_loss   : 0.001567
+val_intention_accuracy: 0.628099
+----------------------------------------
+
+Epoch 30 - 2025-11-18 01:13:40
+----------------------------------------
+loss           : -3.445293
+cls_loss       : 0.021280
+reg_loss       : 0.001368
+intention_accuracy: 0.895033
+val_loss       : 3.341250
+val_cls_loss   : 0.312753
+val_reg_loss   : 0.001725
+val_intention_accuracy: 0.661157
+----------------------------------------
+
+Training completed at 2025-11-18 01:13:40.519614
+================================================================================

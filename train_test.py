@@ -68,7 +68,7 @@ def run(config_file=None):
         if k in model_configs:
             configs[k].update(model_configs[k])
     
-    # 保存 exp_opts 到 configs（用于后续保存到 configs.yaml）
+    # Keep exp_opts in configs so it can be written into configs.yaml later
     if 'exp_opts' in model_configs:
         configs['exp_opts'] = model_configs['exp_opts']
 
@@ -79,19 +79,19 @@ def run(config_file=None):
 
     exp_opts_cfg = model_configs.get('exp_opts', {})
     if 'datasets' not in exp_opts_cfg:
-        raise ValueError('配置缺少 exp_opts.datasets，无法确定要训练的数据集')
-    seed_value = exp_opts_cfg.get('seed', None)  # 默认为 None，表示不固定随机种子
+        raise ValueError('exp_opts.datasets is missing from the configuration; cannot determine which datasets to train')
+    seed_value = exp_opts_cfg.get('seed', None)  # Defaults to None, meaning randomness is not fixed
 
     # update model and training options from the config file
     for dataset_idx, dataset in enumerate(exp_opts_cfg['datasets']):
         per_dataset_seed = seed_value[dataset_idx] if isinstance(seed_value, (list, tuple)) else seed_value
         
-        # 只有当 seed 不为 None 时才设置随机种子
+        # Only set deterministic seeds when the user provides one
         if per_dataset_seed is not None:
             set_global_determinism(per_dataset_seed)
-            print(f"✓ 使用固定随机种子: {per_dataset_seed}")
+            print(f"✓ Using fixed random seed: {per_dataset_seed}")
         else:
-            print("⚠ 未设置随机种子，每次训练结果将不同")
+            print("[!] No fixed random seed; each training run may produce different results")
         
 
         configs['data_opts']['sample_type'] = 'beh' if 'beh' in dataset else 'all'
@@ -101,39 +101,20 @@ def run(config_file=None):
         configs['train_opts']['lr'] = exp_opts_cfg['lr'][dataset_idx]
         configs['train_opts']['epochs'] = exp_opts_cfg['epochs'][dataset_idx]
         model_name = configs['model_opts']['model']
-        # Remove speed in case the dataset is jaad
-        if 'RNN' in model_name and 'jaad' in dataset:
-            configs['model_opts']['obs_input_type'] = configs['model_opts']['obs_input_type']
 
         for k, v in configs.items():
             print(k,v)
 
-        # set batch size
-        if model_name in ['ConvLSTM']:
-            configs['train_opts']['batch_size'] = 2
-        if model_name in ['C3D', 'I3D']:
-            configs['train_opts']['batch_size'] = 4
-        if model_name in ['PCPA']:
-            configs['train_opts']['batch_size'] = 1
-        if 'MultiRNN' in model_name:
-            configs['train_opts']['batch_size'] = 8
-        if model_name in ['TwoStream']:
-            configs['train_opts']['batch_size'] = 16
 
         if configs['model_opts']['dataset'] == 'pie':
-
-            # imdb = PIE(data_path=os.environ.copy()['PIE_PATH'])
             imdb = PIE(data_path=path_pie)
-
         elif configs['model_opts']['dataset'] == 'jaad':
             imdb = JAAD(data_path=path_jaad)
-
         else:
             raise ValueError(f"Unsupported dataset: {configs['model_opts']['dataset']}")
 
         # get sequences
         beh_seq_train = imdb.generate_data_trajectory_sequence('train', **configs['data_opts'])
-        # beh_seq_val = None
         # Uncomment the line below to use validation set
         beh_seq_val = imdb.generate_data_trajectory_sequence('val', **configs['data_opts'])
         beh_seq_test = imdb.generate_data_trajectory_sequence('test', **configs['data_opts']) ## load_dataset
@@ -158,16 +139,16 @@ def run(config_file=None):
 
         # write_to_yaml(yaml_path=os.path.join(saved_files_path, 'results.yaml'), data=data)
 
-        # 保存配置，包含当前使用的 seed 值
+        # Persist configuration for the trained model
         data = configs.copy()
-        # 更新 exp_opts 为当前 dataset 的单一配置
+        # Narrow exp_opts down to the current dataset only
         if 'exp_opts' in data:
             data['exp_opts'] = {
                 'datasets': [dataset],
                 'batch_size': [configs['train_opts']['batch_size']],
                 'epochs': [configs['train_opts']['epochs']],
                 'lr': [configs['train_opts']['lr']],
-                'seed': per_dataset_seed  # 保存当前使用的 seed
+                'seed': per_dataset_seed  # Record the seed used for this dataset
             }
         write_to_yaml(yaml_path=os.path.join(saved_files_path, 'configs.yaml'), data=data)
 
