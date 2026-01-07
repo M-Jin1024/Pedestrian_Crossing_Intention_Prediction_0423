@@ -11,56 +11,23 @@ from tensorflow.keras import backend as K
 
 from action_predict import action_prediction
 from action_predict import ActionPredict
-#from new_model import NewModel, HybridModel, MultiRNN3D, MultiRNN3D_MATT
 
 from jaad_data import JAAD
 from pie_data import PIE
 from seed_utils import set_global_determinism
 
 import tensorflow as tf
-# tf.test.is_gpu_available()
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 assert len(gpus) > 0, "Not enough GPU hardware devices available"
 for gpu in gpus:
     tf.config.experimental.set_memory_growth(gpu, True)
-    # tf.config.experimental.set_virtual_device_configuration(
-    #     gpu,
-    #     [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=7168)]
-    # )
-
-
 
 
 # Path to datasets - prefer env vars, but fall back to local absolute paths when unset
 path_jaad = os.environ.get('JAAD_PATH', './JAAD')
 path_pie = os.environ.get('PIE_PATH', '/media/minshi/WD_2T/PIE/annotations')
-# config = tf.compat.v1.ConfigProto()
-# # config.gpu_options.per_process_gpu_memory_fraction=0.8
-# config.gpu_options.allow_growth = True
-# sess = tf.compat.v1.Session(config=config)
 
-
-
-# from tensorflow.compat.v1 import ConfigProto
-# from tensorflow.compat.v1 import InteractiveSession
-# config = ConfigProto()
-# config.gpu_options.allow_growth = True
-# session = InteractiveSession(config=config)
-
-
-
-# config = tf.compat.v1.ConfigProto()
-# config.gpu_options.per_process_gpu_memory_fraction = 0.8
-# tf.keras.backend.set_session(tf.Session(config=config));
-
-# config = tf.compat.v1.ConfigProto()
-# config.gpu_options.allow_growth = True
-# sess = tf.Session(config=config)
-
-# physical_devices = tf.config.experimental.list_physical_devices('GPU')
-# assert len(physical_devices) > 0, "Not enough GPU hardware devices available"
-# config = tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
 
 def write_to_yaml(yaml_path=None, data=None):
@@ -126,11 +93,6 @@ def run(config_file=None):
         else:
             print("⚠ 未设置随机种子，每次训练结果将不同")
         
-        # # clear GPU memory
-        # device = cuda.get_current_device()
-        # device.reset()
-
-        # print('===> GPU memory cleared')
 
         configs['data_opts']['sample_type'] = 'beh' if 'beh' in dataset else 'all'
         configs['model_opts']['overlap'] = 0.6 if 'pie' in dataset else 0.8
@@ -242,10 +204,6 @@ if __name__ == '__main__':
         elif o in ['-c', '--config_file']:
             config_file = a
 
-    # if neither the config file or 
-# physical_devices = tf.config.experimental.list_physical_devices('GPU')
-# assert len(physical_devices) > 0, "Not enough GPU hardware devices available"
-# config = tf.config.experimental.set_memory_growth(physical_devices[0], Trmodel name are provided
     if not config_file:
         print('\x1b[1;37;41m' + 'ERROR: Provide path to config file!' + '\x1b[0m')
         usage()
